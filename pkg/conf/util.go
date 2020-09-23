@@ -103,7 +103,7 @@ func ReadConfig(
 				} else {
 					os.Exit(1)
 				}
-				//case syscall.SIGHUP:
+				// case syscall.SIGHUP:
 				//	// force reload
 			}
 		}

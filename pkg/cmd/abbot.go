@@ -67,31 +67,19 @@ func NewAbbotCmd() *cobra.Command {
 	flags.StringVar(&config.Abbot.Listen, "listen", constant.DefaultAbbotListenAddr, "set abbot listen address")
 
 	// network manager config options
-	flags.StringVar(&config.ContainerNetwork.DataDir, "ctr.dataDir", constant.DefaultContainerNetworkDataDir, "set data dir for container network")
-	//flags.StringVar(&config.ContainerNetwork.Proxy.AddressV4, "net.proxy.addressV4",
-	//	"", "set ipv4 proxy address for network traffic redirection")
-	//flags.StringVar(&config.ContainerNetwork.Proxy.AddressV6, "net.proxy.addressV6",
-	//	"", "set ipv6 proxy address for network traffic redirection")
-	//
-	//flags.IntVar(&config.ContainerNetwork.Proxy.Tproxy.Routing.RulePriority, "net.proxy.tproxy.routing.rulePriority",
-	//	30000, "set routing rule priority for tproxy traffic forwarding")
-	//flags.IntVar(&config.ContainerNetwork.Proxy.Tproxy.Routing.Table, "net.proxy.tproxy.routing.table",
-	//	100, "set route table for tproxy traffic forwarding")
-	//flags.StringVar(&config.ContainerNetwork.Proxy.Tproxy.Mark, "net.proxy.tproxy.mark",
-	//	"1", "set tproxy mark")
-	//flags.BoolVar(&config.ContainerNetwork.Proxy.Tproxy.UDP, "net.proxy.tproxy.udp",
-	//	false, "use udp tproxy")
-	//flags.BoolVar(&config.ContainerNetwork.Proxy.Tproxy.TCP, "net.proxy.tproxy.tcp",
-	//	false, "use tcp tproxy")
-	//flags.StringSliceVar(&config.ContainerNetwork.ClusterIPRanges, "net.clusterIPRange",
-	//	nil, "set cluster ip ranges, used to filter network traffic to cluster")
-	//flags.StringVar(&config.ContainerNetwork.CNI.ContainerDevice, "net.cni.containerDev",
-	//	constant.DefaultContainerInterfaceName, "set container network device name")
-	//flags.StringVar(&config.ContainerNetwork.CNI.HostDevice, "net.cni.hostDev",
-	//	constant.DefaultHostInterfaceName, "set host bridge name")
-
+	flags.StringVar(
+		&config.ContainerNetwork.DataDir,
+		"ctr.dataDir",
+		constant.DefaultContainerNetworkDataDir,
+		"set data dir for container network",
+	)
 	// cni plugin
-	flags.StringSliceVar(&config.ContainerNetwork.CNILookupPaths, "net.cni.lookupPath", []string{constant.DefaultCNIPluginsDir}, "set paths can find cni plugins")
+	flags.StringSliceVar(
+		&config.ContainerNetwork.CNILookupPaths,
+		"ctr.cniLookupPath",
+		[]string{constant.DefaultCNIPluginsDir},
+		"set paths can find cni plugins",
+	)
 
 	abbotCmd.AddCommand(newRequestCmd(&appCtx))
 

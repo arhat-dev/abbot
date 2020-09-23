@@ -100,6 +100,7 @@ func (m *Manager) Start() error {
 		}
 	}()
 
+	// nolint:gosimple
 	select {
 	case <-m.ctx.Done():
 		return nil

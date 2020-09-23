@@ -95,7 +95,7 @@ func decodeKey(data, kind, target string) (wgtypes.Key, error) {
 	}
 
 	ret := wgtypes.Key{}
-	copy(ret[:], pk[:])
+	copy(ret[:], pk)
 
 	return ret, nil
 }
@@ -110,9 +110,9 @@ func (c *Config) GetWireGuardConfig() (*wgtypes.Config, error) {
 
 		var allowedIPs []net.IPNet
 		for _, ip := range p.AllowedIPs {
-			_, ipNet, err := net.ParseCIDR(ip)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse net cidr %s: %w", ip, err)
+			_, ipNet, err2 := net.ParseCIDR(ip)
+			if err2 != nil {
+				return nil, fmt.Errorf("failed to parse net cidr %s: %w", ip, err2)
 			}
 
 			allowedIPs = append(allowedIPs, *ipNet)
@@ -415,9 +415,9 @@ func (d *Driver) Ensure(up bool) (err error) {
 
 	go func() {
 		for {
-			conn, err := uapi.Accept()
-			if err != nil {
-				errs <- err
+			conn, err2 := uapi.Accept()
+			if err2 != nil {
+				errs <- err2
 				return
 			}
 
