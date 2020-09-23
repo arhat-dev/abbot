@@ -39,7 +39,6 @@ image.build.abbot.linux.all: \
 	image.build.abbot.linux.arm64 \
 	image.build.abbot.linux.armv7 \
 	image.build.abbot.linux.armv6 \
-	image.build.abbot.linux.x86 \
 	image.build.abbot.linux.s390x \
 	image.build.abbot.linux.ppc64le
 
@@ -80,7 +79,6 @@ image.push.abbot.linux.all: \
 	image.push.abbot.linux.arm64 \
 	image.push.abbot.linux.armv7 \
 	image.push.abbot.linux.armv6 \
-	image.push.abbot.linux.x86 \
 	image.push.abbot.linux.s390x \
 	image.push.abbot.linux.ppc64le
 
