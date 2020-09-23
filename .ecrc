@@ -5,7 +5,7 @@
   "SpacesAftertabs": false,
   "NoColor": false,
   "Exclude": [
-    "vendor", "generated"
+    "vendor", "generated", "pkg/constant/templates.go"
   ],
   "AllowedContentTypes": [],
   "PassedFiles": [],
