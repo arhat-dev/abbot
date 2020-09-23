@@ -6,16 +6,12 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"golang.zx2c4.com/wireguard/device"
-	"golang.zx2c4.com/wireguard/ipc"
-	"golang.zx2c4.com/wireguard/tun"
 	"golang.zx2c4.com/wireguard/wgctrl"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 
@@ -378,17 +374,8 @@ func (d *Driver) Ensure(up bool) (err error) {
 	}
 
 	logger := device.NewLogger(logLevel, fmt.Sprintf("[wg:%s]", d.config.Name))
-	fileUAPI, err := openUAPI(d.config.Name)
 
-	defer func() {
-		if err != nil {
-			_ = fileUAPI.Close()
-		}
-	}()
-
-	errs := make(chan error)
-
-	uapi, err := ipc.UAPIListen(d.config.Name, fileUAPI)
+	uapi, err := listenUAPI(d.config.Name)
 	if err != nil {
 		return fmt.Errorf("failed to listen on uapi socket: %w", err)
 	}
@@ -412,6 +399,8 @@ func (d *Driver) Ensure(up bool) (err error) {
 	} else {
 		dev.Down()
 	}
+
+	errs := make(chan error)
 
 	go func() {
 		for {
@@ -470,42 +459,4 @@ func (d *Driver) delete(recoverable bool) error {
 
 func (d *Driver) Delete() error {
 	return d.delete(false)
-}
-
-func createTun(ifname string, mtu int) (tun.Device, error) {
-	tunFdStr := os.Getenv("WG_TUN_FD")
-	if tunFdStr == "" {
-		return tun.CreateTUN(ifname, mtu)
-	}
-
-	// construct tun device from supplied fd
-
-	fd, err := strconv.ParseUint(tunFdStr, 10, 32)
-	if err != nil {
-		return nil, err
-	}
-
-	err = syscall.SetNonblock(int(fd), true)
-	if err != nil {
-		return nil, err
-	}
-
-	file := os.NewFile(uintptr(fd), "")
-	return tun.CreateTUNFromFile(file, device.DefaultMTU)
-}
-
-func openUAPI(ifname string) (*os.File, error) {
-	uapiFdStr := os.Getenv("WG_UAPI_FD")
-	if uapiFdStr == "" {
-		return ipc.UAPIOpen(ifname)
-	}
-
-	// use supplied fd
-
-	fd, err := strconv.ParseUint(uapiFdStr, 10, 32)
-	if err != nil {
-		return nil, err
-	}
-
-	return os.NewFile(uintptr(fd), ""), nil
 }

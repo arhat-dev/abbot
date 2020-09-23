@@ -1,3 +1,5 @@
+// +build !nobridge
+
 package driveradd
 
 import (

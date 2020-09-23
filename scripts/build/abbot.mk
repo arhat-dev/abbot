@@ -122,7 +122,10 @@ abbot.windows.armv7:
 
 abbot.windows.all: \
 	abbot.windows.x86 \
-	abbot.windows.amd64
+	abbot.windows.amd64 \
+	abbot.windows.armv7 \
+	abbot.windows.armv6 \
+	abbot.windows.armv5
 
 # # android build requires android sdk
 # abbot.android.amd64:
