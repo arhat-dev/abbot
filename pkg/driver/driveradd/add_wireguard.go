@@ -1,5 +1,5 @@
 // +build !nowireguard
-// +build freebsd linux darwin windows,386 windows,amd64 openbsd,386 openbsd,amd64
+// +build freebsd linux darwin windows,386 windows,amd64 openbsd,amd64
 
 package driveradd
 
