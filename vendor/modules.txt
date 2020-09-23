@@ -1,18 +1,61 @@
+# arhat.dev/abbot-proto v0.0.0-20200908152444-df59421a64d2
+## explicit
+arhat.dev/abbot-proto/abbotgopb
 # arhat.dev/pkg v0.0.0-20200814094720-eac4d5d5680b
 ## explicit
 arhat.dev/pkg/envhelper
 arhat.dev/pkg/log
+# github.com/containernetworking/cni v0.7.1
+## explicit
+github.com/containernetworking/cni/libcni
+github.com/containernetworking/cni/pkg/invoke
+github.com/containernetworking/cni/pkg/types
+github.com/containernetworking/cni/pkg/types/020
+github.com/containernetworking/cni/pkg/types/current
+github.com/containernetworking/cni/pkg/version
+# github.com/davecgh/go-spew v1.1.1
+github.com/davecgh/go-spew/spew
+# github.com/go-logr/logr v0.2.0
+github.com/go-logr/logr
+# github.com/gogo/protobuf v1.3.1
+github.com/gogo/protobuf/gogoproto
+github.com/gogo/protobuf/proto
+github.com/gogo/protobuf/protoc-gen-gogo/descriptor
+github.com/gogo/protobuf/sortkeys
+# github.com/golang/protobuf v1.3.4
+github.com/golang/protobuf/proto
+github.com/golang/protobuf/ptypes
+github.com/golang/protobuf/ptypes/any
+github.com/golang/protobuf/ptypes/duration
+github.com/golang/protobuf/ptypes/timestamp
 # github.com/inconshreveable/mousetrap v1.0.0
 github.com/inconshreveable/mousetrap
+# github.com/mdlayher/genetlink v1.0.0
+github.com/mdlayher/genetlink
+# github.com/mdlayher/netlink v1.1.0
+github.com/mdlayher/netlink
+github.com/mdlayher/netlink/nlenc
+# github.com/pmezard/go-difflib v1.0.0
+github.com/pmezard/go-difflib/difflib
 # github.com/spf13/cobra v1.0.0
 ## explicit
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
-## explicit
 github.com/spf13/pflag
+# github.com/stretchr/testify v1.6.1
+## explicit
+github.com/stretchr/testify/assert
+# github.com/vishvananda/netlink v1.0.0
+## explicit
+github.com/vishvananda/netlink
+github.com/vishvananda/netlink/nl
+# github.com/vishvananda/netns v0.0.0-20171111001504-be1fbeda1936
+## explicit
+github.com/vishvananda/netns
 # go.uber.org/atomic v1.6.0
 go.uber.org/atomic
 # go.uber.org/multierr v1.5.0
+## explicit
 go.uber.org/multierr
 # go.uber.org/zap v1.15.0
 go.uber.org/zap
@@ -21,9 +64,134 @@ go.uber.org/zap/internal/bufferpool
 go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit
 go.uber.org/zap/zapcore
+# golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a
+## explicit
+golang.org/x/crypto/blake2s
+golang.org/x/crypto/chacha20
+golang.org/x/crypto/chacha20poly1305
+golang.org/x/crypto/curve25519
+golang.org/x/crypto/internal/subtle
+golang.org/x/crypto/poly1305
+# golang.org/x/net v0.0.0-20200904194848-62affa334b73
+## explicit
+golang.org/x/net/bpf
+golang.org/x/net/http/httpguts
+golang.org/x/net/http2
+golang.org/x/net/http2/hpack
+golang.org/x/net/idna
+golang.org/x/net/internal/iana
+golang.org/x/net/internal/socket
+golang.org/x/net/internal/timeseries
+golang.org/x/net/ipv4
+golang.org/x/net/ipv6
+golang.org/x/net/trace
+# golang.org/x/sys v0.0.0-20200922070232-aee5d888a860 => golang.org/x/sys v0.0.0-20200501145240-bc7a7d42d5c3
+## explicit
+golang.org/x/sys/cpu
+golang.org/x/sys/internal/unsafeheader
+golang.org/x/sys/unix
+golang.org/x/sys/windows
+golang.org/x/sys/windows/registry
+# golang.org/x/text v0.3.3
+## explicit
+golang.org/x/text/secure/bidirule
+golang.org/x/text/transform
+golang.org/x/text/unicode/bidi
+golang.org/x/text/unicode/norm
+# golang.zx2c4.com/wireguard v0.0.20200320
+## explicit
+golang.zx2c4.com/wireguard/device
+golang.zx2c4.com/wireguard/ipc
+golang.zx2c4.com/wireguard/ipc/winpipe
+golang.zx2c4.com/wireguard/ratelimiter
+golang.zx2c4.com/wireguard/replay
+golang.zx2c4.com/wireguard/rwcancel
+golang.zx2c4.com/wireguard/tai64n
+golang.zx2c4.com/wireguard/tun
+golang.zx2c4.com/wireguard/tun/wintun
+golang.zx2c4.com/wireguard/tun/wintun/iphlpapi
+golang.zx2c4.com/wireguard/tun/wintun/namespaceapi
+golang.zx2c4.com/wireguard/tun/wintun/nci
+golang.zx2c4.com/wireguard/tun/wintun/registry
+golang.zx2c4.com/wireguard/tun/wintun/setupapi
+# golang.zx2c4.com/wireguard/wgctrl v0.0.0-20200609130330-bd2cb7843e1b
+## explicit
+golang.zx2c4.com/wireguard/wgctrl
+golang.zx2c4.com/wireguard/wgctrl/internal/wginternal
+golang.zx2c4.com/wireguard/wgctrl/internal/wglinux
+golang.zx2c4.com/wireguard/wgctrl/internal/wglinux/internal/wgh
+golang.zx2c4.com/wireguard/wgctrl/internal/wgopenbsd
+golang.zx2c4.com/wireguard/wgctrl/internal/wgopenbsd/internal/wgh
+golang.zx2c4.com/wireguard/wgctrl/internal/wguser
+golang.zx2c4.com/wireguard/wgctrl/wgtypes
+# google.golang.org/genproto v0.0.0-20191009194640-548a555dbc03
+google.golang.org/genproto/googleapis/rpc/status
+# google.golang.org/grpc v1.31.1
+## explicit
+google.golang.org/grpc
+google.golang.org/grpc/attributes
+google.golang.org/grpc/backoff
+google.golang.org/grpc/balancer
+google.golang.org/grpc/balancer/base
+google.golang.org/grpc/balancer/grpclb/state
+google.golang.org/grpc/balancer/roundrobin
+google.golang.org/grpc/binarylog/grpc_binarylog_v1
+google.golang.org/grpc/codes
+google.golang.org/grpc/connectivity
+google.golang.org/grpc/credentials
+google.golang.org/grpc/credentials/internal
+google.golang.org/grpc/encoding
+google.golang.org/grpc/encoding/proto
+google.golang.org/grpc/grpclog
+google.golang.org/grpc/internal
+google.golang.org/grpc/internal/backoff
+google.golang.org/grpc/internal/balancerload
+google.golang.org/grpc/internal/binarylog
+google.golang.org/grpc/internal/buffer
+google.golang.org/grpc/internal/channelz
+google.golang.org/grpc/internal/credentials
+google.golang.org/grpc/internal/envconfig
+google.golang.org/grpc/internal/grpclog
+google.golang.org/grpc/internal/grpcrand
+google.golang.org/grpc/internal/grpcsync
+google.golang.org/grpc/internal/grpcutil
+google.golang.org/grpc/internal/resolver/dns
+google.golang.org/grpc/internal/resolver/passthrough
+google.golang.org/grpc/internal/serviceconfig
+google.golang.org/grpc/internal/status
+google.golang.org/grpc/internal/syscall
+google.golang.org/grpc/internal/transport
+google.golang.org/grpc/keepalive
+google.golang.org/grpc/metadata
+google.golang.org/grpc/peer
+google.golang.org/grpc/resolver
+google.golang.org/grpc/serviceconfig
+google.golang.org/grpc/stats
+google.golang.org/grpc/status
+google.golang.org/grpc/tap
 # gopkg.in/yaml.v2 v2.2.8
 ## explicit
 gopkg.in/yaml.v2
+# gopkg.in/yaml.v3 v3.0.0-20200605160147-a5ece683394c
+gopkg.in/yaml.v3
+# k8s.io/apimachinery v0.18.8 => github.com/kubernetes/apimachinery v0.18.8
+k8s.io/apimachinery/pkg/util/clock
+k8s.io/apimachinery/pkg/util/errors
+k8s.io/apimachinery/pkg/util/runtime
+k8s.io/apimachinery/pkg/util/sets
+k8s.io/apimachinery/pkg/util/version
+k8s.io/apimachinery/pkg/util/wait
+# k8s.io/klog v1.0.0 => github.com/kubernetes/klog v1.0.0
+k8s.io/klog
+# k8s.io/klog/v2 v2.0.0 => github.com/kubernetes/klog/v2 v2.3.0
+k8s.io/klog/v2
+# k8s.io/kubernetes v1.18.6 => github.com/kubernetes/kubernetes v1.18.8
+## explicit
+k8s.io/kubernetes/pkg/util/iptables
+# k8s.io/utils v0.0.0-20200324210504-a9aa75ae1b89 => github.com/kubernetes/utils v0.0.0-20200821003339-5e75c0163111
+## explicit
+k8s.io/utils/exec
+k8s.io/utils/trace
 # k8s.io/api => github.com/kubernetes/api v0.18.8
 # k8s.io/apiextensions-apiserver => github.com/kubernetes/apiextensions-apiserver v0.18.8
 # k8s.io/apimachinery => github.com/kubernetes/apimachinery v0.18.8
@@ -50,3 +218,4 @@ gopkg.in/yaml.v2
 # k8s.io/sample-apiserver => github.com/kubernetes/sample-apiserver v0.18.8
 # k8s.io/utils => github.com/kubernetes/utils v0.0.0-20200821003339-5e75c0163111
 # vbom.ml/util => github.com/fvbommel/util v0.0.2
+# golang.org/x/sys => golang.org/x/sys v0.0.0-20200501145240-bc7a7d42d5c3
