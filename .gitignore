@@ -78,6 +78,7 @@ Session.vim
 /.idea
 /.vscode
 /private
+/pkg/legacy
 
 /test
 

@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "abbot.fullname" . }}
+  labels:
+    {{- include "abbot.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "abbot.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+    {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      labels:
+        {{- include "abbot.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      # only select nodes in this namespace
+      nodeSelector:
+        arhat.dev/namespace: {{ .Release.Namespace }}
+      tolerations:
+        - key: arhat.dev/namespace
+          value: {{ .Release.Namespace }}
+        - key: node.kubernetes.io/unschedulable
+          operator: Exists
+      hostPID: true
+      hostNetwork: true
+      containers:
+        - name: abbot # abbot container name MUST be abbot
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /abbot
+            - -c
+            - /etc/abbot/config.yaml
+          securityContext:
+            privileged: true
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          volumeMounts:
+          - name: config
+            mountPath: /etc/abbot
+          - name: xtables-lock
+            mountPath: /run/xtables.lock
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+      - name: xtables-lock
+        hostPath:
+          path: /run/xtables.lock
+          type: FileOrCreate
+      - name: config
+        configMap:
+          name: {{ include "abbot.fullname" . }}

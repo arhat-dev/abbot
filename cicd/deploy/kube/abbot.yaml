@@ -1,0 +1,112 @@
+---
+# Source: abbot/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: abbot
+  labels:
+    helm.sh/chart: abbot-0.1.0
+    app.kubernetes.io/name: abbot
+    app.kubernetes.io/instance: abbot
+    arhat.dev/role: Abbot
+    app.kubernetes.io/version: "latest"
+    app.kubernetes.io/managed-by: Helm
+data:
+  config.yaml: |
+    abbot:
+      listen: unix:///var/run/abbot.sock
+      log:
+      - file: stderr
+        format: console
+        level: debug
+    services:
+      network:
+        clusterIPRanges:
+        - 10.1.0.0/16
+        cni:
+          containerDev: eth0
+          hostDev: abbot0
+          lookupPaths:
+          - /opt/cni/bin
+        dataDir: /var/lib/abbot/net
+        proxy:
+          addr4: 127.0.0.1:65000
+          addr6: '[::1]:65000'
+          tproxy:
+            mark: "1"
+            routing:
+              rulePriority: 30000
+              table: 100
+            tcp: false
+            udp: true
+---
+# Source: abbot/templates/daemonset.yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: abbot
+  labels:
+    helm.sh/chart: abbot-0.1.0
+    app.kubernetes.io/name: abbot
+    app.kubernetes.io/instance: abbot
+    arhat.dev/role: Abbot
+    app.kubernetes.io/version: "latest"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: abbot
+      app.kubernetes.io/instance: abbot
+      arhat.dev/role: Abbot
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: abbot
+        app.kubernetes.io/instance: abbot
+        arhat.dev/role: Abbot
+    spec:
+      securityContext:
+        {}
+      # only select nodes in this namespace
+      nodeSelector:
+        arhat.dev/namespace: edge
+      tolerations:
+        - key: arhat.dev/namespace
+          value: edge
+        - key: node.kubernetes.io/unschedulable
+          operator: Exists
+      hostPID: true
+      hostNetwork: true
+      containers:
+        - name: abbot # abbot container name MUST be abbot
+          image: "docker.io/arhatdev/abbot:amd64"
+          imagePullPolicy: Always
+          command:
+            - /abbot
+            - -c
+            - /etc/abbot/config.yaml
+          securityContext:
+            privileged: true
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          volumeMounts:
+          - name: config
+            mountPath: /etc/abbot
+          - name: xtables-lock
+            mountPath: /run/xtables.lock
+          resources:
+            {}
+      volumes:
+      - name: xtables-lock
+        hostPath:
+          path: /run/xtables.lock
+          type: FileOrCreate
+      - name: config
+        configMap:
+          name: abbot

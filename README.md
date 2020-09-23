@@ -1,24 +1,14 @@
-# Template Application Go
+# Abbot `住持`
 
-[![CI](https://github.com/arhat-dev/template-application-go/workflows/CI/badge.svg)](https://github.com/arhat-dev/template-application-go/actions?query=workflow%3ACI)
-[![Build](https://github.com/arhat-dev/template-application-go/workflows/Build/badge.svg)](https://github.com/arhat-dev/template-application-go/actions?query=workflow%3ABuild)
-[![PkgGoDev](https://pkg.go.dev/badge/arhat.dev/template-application-go)](https://pkg.go.dev/arhat.dev/template-application-go)
-[![GoReportCard](https://goreportcard.com/badge/arhat.dev/template-application-go)](https://goreportcard.com/report/arhat.dev/template-application-go)
-[![codecov](https://codecov.io/gh/arhat-dev/template-application-go/branch/master/graph/badge.svg)](https://codecov.io/gh/arhat-dev/template-application-go)
+[![CI](https://github.com/arhat-dev/abbot/workflows/CI/badge.svg)](https://github.com/arhat-dev/abbot/actions?query=workflow%3ACI)
+[![Build](https://github.com/arhat-dev/abbot/workflows/Build/badge.svg)](https://github.com/arhat-dev/abbot/actions?query=workflow%3ABuild)
+[![PkgGoDev](https://pkg.go.dev/badge/arhat.dev/abbot)](https://pkg.go.dev/arhat.dev/abbot)
+[![GoReportCard](https://goreportcard.com/badge/arhat.dev/abbot)](https://goreportcard.com/report/arhat.dev/abbot)
+[![codecov](https://codecov.io/gh/arhat-dev/abbot/branch/master/graph/badge.svg)](https://codecov.io/gh/arhat-dev/abbot)
 
-Template repo for applications written in Go
+Network manager living at edge
 
-## Make Targets
-
-- binary build: `<comp>.{OS}.{ARCH}`
-- image build: `image.build.<comp>.{OS}.{ARCH}`
-- image push: `image.push.<comp>.{OS}.{ARCH}`
-- unit tests: `test.pkg`, `test.cmd`
-- packaging:
-  - linux deb: `package.<comp>.deb.{ARCH}`
-  - linux rpm: `package.<comp>.rpm.{ARCH}`
-  - windows msi: `package.<comp>.msi.{ARCH}`
-  - darwin pkg: `package.<comp>.pkg.{ARCH}`
+## Features
 
 ## LICENSE
 

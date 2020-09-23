@@ -22,19 +22,22 @@ import (
 	"os"
 	"time"
 
-	"arhat.dev/template-application-go/pkg/cmd"
-	"arhat.dev/template-application-go/pkg/version"
+	"arhat.dev/abbot/pkg/cmd"
+	"arhat.dev/abbot/pkg/version"
+
+	// Add network device drivers
+	_ "arhat.dev/abbot/pkg/driver/driveradd"
 )
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	rootCmd := cmd.NewTemplateApplicationGoCmd()
+	rootCmd := cmd.NewAbbotCmd()
 	rootCmd.AddCommand(version.NewVersionCmd())
 
 	err := rootCmd.Execute()
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "failed to run template-application-go %v: %v\n", os.Args, err)
+		_, _ = fmt.Fprintf(os.Stderr, "failed to run abbot %v: %v\n", os.Args, err)
 		os.Exit(1)
 	}
 }

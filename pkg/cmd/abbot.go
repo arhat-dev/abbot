@@ -1,0 +1,141 @@
+/*
+Copyright 2019 The arhat.dev Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package cmd
+
+import (
+	"context"
+	"fmt"
+
+	"arhat.dev/pkg/log"
+	"github.com/spf13/cobra"
+
+	"arhat.dev/abbot/pkg/conf"
+	"arhat.dev/abbot/pkg/constant"
+	"arhat.dev/abbot/pkg/network"
+)
+
+func NewAbbotCmd() *cobra.Command {
+	var (
+		appCtx       context.Context
+		configFile   string
+		config       = new(conf.AbbotConfig)
+		cliLogConfig = new(log.Config)
+	)
+
+	abbotCmd := &cobra.Command{
+		Use:           "abbot",
+		SilenceErrors: true,
+		SilenceUsage:  true,
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if cmd.Use == "version" {
+				return nil
+			}
+
+			var err error
+			appCtx, err = conf.ReadConfig(cmd, &configFile, cliLogConfig, config)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return run(appCtx, config)
+		},
+	}
+
+	flags := abbotCmd.PersistentFlags()
+	// config file
+	flags.StringVarP(&configFile, "config", "c", constant.DefaultAbbotConfigFile, "path to the abbot config file")
+	// log config options
+	flags.AddFlagSet(log.FlagsForLogConfig("log.", cliLogConfig))
+	// listen address
+	flags.StringVar(&config.Abbot.Listen, "listen", constant.DefaultAbbotListenAddr, "set abbot listen address")
+
+	// network manager config options
+	flags.StringVar(&config.ContainerNetwork.DataDir, "ctr.dataDir", constant.DefaultContainerNetworkDataDir, "set data dir for container network")
+	//flags.StringVar(&config.ContainerNetwork.Proxy.AddressV4, "net.proxy.addressV4",
+	//	"", "set ipv4 proxy address for network traffic redirection")
+	//flags.StringVar(&config.ContainerNetwork.Proxy.AddressV6, "net.proxy.addressV6",
+	//	"", "set ipv6 proxy address for network traffic redirection")
+	//
+	//flags.IntVar(&config.ContainerNetwork.Proxy.Tproxy.Routing.RulePriority, "net.proxy.tproxy.routing.rulePriority",
+	//	30000, "set routing rule priority for tproxy traffic forwarding")
+	//flags.IntVar(&config.ContainerNetwork.Proxy.Tproxy.Routing.Table, "net.proxy.tproxy.routing.table",
+	//	100, "set route table for tproxy traffic forwarding")
+	//flags.StringVar(&config.ContainerNetwork.Proxy.Tproxy.Mark, "net.proxy.tproxy.mark",
+	//	"1", "set tproxy mark")
+	//flags.BoolVar(&config.ContainerNetwork.Proxy.Tproxy.UDP, "net.proxy.tproxy.udp",
+	//	false, "use udp tproxy")
+	//flags.BoolVar(&config.ContainerNetwork.Proxy.Tproxy.TCP, "net.proxy.tproxy.tcp",
+	//	false, "use tcp tproxy")
+	//flags.StringSliceVar(&config.ContainerNetwork.ClusterIPRanges, "net.clusterIPRange",
+	//	nil, "set cluster ip ranges, used to filter network traffic to cluster")
+	//flags.StringVar(&config.ContainerNetwork.CNI.ContainerDevice, "net.cni.containerDev",
+	//	constant.DefaultContainerInterfaceName, "set container network device name")
+	//flags.StringVar(&config.ContainerNetwork.CNI.HostDevice, "net.cni.hostDev",
+	//	constant.DefaultHostInterfaceName, "set host bridge name")
+
+	// cni plugin
+	flags.StringSliceVar(&config.ContainerNetwork.CNILookupPaths, "net.cni.lookupPath", []string{constant.DefaultCNIPluginsDir}, "set paths can find cni plugins")
+
+	abbotCmd.AddCommand(newRequestCmd(&appCtx))
+
+	return abbotCmd
+}
+
+func run(ctx context.Context, config *conf.AbbotConfig) error {
+	//u, err := url.Parse(config.Abbot.Listen)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//addr := u.Host
+	//if u.Scheme == "unix" {
+	//	addr = u.Path
+	//	// clean up previous unix socket file
+	//	if err = os.Remove(addr); err != nil && !os.IsNotExist(err) {
+	//		return err
+	//	}
+	//}
+	//
+	//l, err := net.Listen(u.Scheme, addr)
+	//if err != nil {
+	//	return err
+	//}
+
+	mgr, err := network.NewManager(ctx, &config.HostNetwork, &config.ContainerNetwork)
+	if err != nil {
+		return err
+	}
+
+	err = mgr.Start()
+	if err != nil {
+		return fmt.Errorf("failed to start network manager: %w", err)
+	}
+
+	return nil
+	//netMgr, err := network.NewManager(ctx, &config.HostNetwork)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//netMgrServer := grpc.NewServer()
+	//abbotgopb.RegisterNetworkManagerServer(netMgrServer, netMgr)
+	//
+	//return netMgrServer.Serve(l)
+}

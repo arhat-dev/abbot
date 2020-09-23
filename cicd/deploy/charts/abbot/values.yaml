@@ -1,0 +1,81 @@
+# Default values for abbot.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+image:
+  repository: docker.io/arhatdev/abbot
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "amd64"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+podSecurityContext: {}
+podAnnotations: {}
+resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+config:
+  abbot:
+    log:
+    - level: debug
+      format: console
+      file: stderr
+
+    # abbot listen address, scheme can be one of [tcp, unix]
+    # then listener is designed to be host local, and should
+    # not be exposed to the network
+    listen: unix:///var/run/abbot.sock
+
+  services:
+    network:
+      # data dir to store container network config
+      dataDir: /var/lib/abbot/net
+      # ip ranges to be forwarded to your cluster proxy
+      clusterIPRanges:
+      - 10.1.0.0/16
+
+      # proxy is the L4 (TCP/UDP) proxy service to redirect all
+      # cluster traffic to your kubernetes cluster
+      proxy:
+        # ipv4 tcp/udp proxy address, address MUST be in the form of <ip>:<port>
+        # leave it empty if no ipv4 proxy will be used
+        addr4: "127.0.0.1:65000"
+        # ipv6 tcp/udp proxy address, address MUST be in the form of <ip>:<port>
+        # leave it empty if no ipv6 proxy will be used
+        addr6: "[::1]:65000"
+
+        tproxy:
+          # tproxy mark
+          mark: "1"
+          # use tcp tproxy (if false, will use DNAT for forwarding)
+          tcp: false
+          # use udp tproxy (if false, will use DNAT for forwarding)
+          udp: true
+
+          # routing options for tproxy traffic
+          routing:
+            # routing table for fwmark lookup
+            table: 100
+            # routing rule priority for fwmark
+            rulePriority: 30000
+
+      # cni related config
+      cni:
+        # cni plugins lookup path
+        lookupPaths: ["/opt/cni/bin"]
+        # the network device (interface) name will be used in container
+        containerDev: eth0
+        # the host bridge name
+        hostDev: abbot0

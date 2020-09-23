@@ -31,25 +31,25 @@ vendor:
 include scripts/test/unit.mk
 
 # binary build
-include scripts/build/template-application-go.mk
+include scripts/build/abbot.mk
 
 # image
-include scripts/image/template-application-go.mk
+include scripts/image/abbot.mk
 
 image.build.linux.all: \
-	image.build.template-application-go.linux.all
+	image.build.abbot.linux.all
 
 image.build.windows.all: \
-	image.build.template-application-go.windows.all
+	image.build.abbot.windows.all
 
 image.push.linux.all: \
-	image.push.template-application-go.linux.all
+	image.push.abbot.linux.all
 
 image.push.windows.all: \
-	image.push.template-application-go.windows.all
+	image.push.abbot.windows.all
 
 # packaging
-include scripts/package/template-application-go.mk
+include scripts/package/abbot.mk
 
 # optional private scripts
 -include private/scripts.mk
