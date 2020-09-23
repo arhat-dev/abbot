@@ -1,11 +1,11 @@
 package conf
 
 type ProxyConfig struct {
-	// AddressV4 the ipv4 address of the proxy server
-	AddressV4 string `json:"addr4" yaml:"addr4"`
+	// Address the address of the proxy server
+	Address string `json:"address" yaml:"address"`
 
-	// AddressV6 the ipv6 address of the proxy server
-	AddressV6 string `json:"addr6" yaml:"addr6"`
+	// Protocols to be proxied, will proxy all if not set
+	Protocols []string `json:"protocols" yaml:"protocols"`
 
 	// IPRanges to be redirect through this proxy
 	IPRanges []string `json:"ipRanges" yaml:"ipRanges"`

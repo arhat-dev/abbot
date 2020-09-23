@@ -20,5 +20,5 @@ const (
 	DefaultAbbotConfigFile         = "/etc/abbot/config.yaml"
 	DefaultAbbotListenAddr         = "unix:///var/run/abbot.sock"
 	DefaultCNIPluginsDir           = "/opt/cni/bin"
-	DefaultContainerNetworkDataDir = "/var/lib/abbot/net"
+	DefaultContainerNetworkDataDir = "/var/lib/abbot/container"
 )
