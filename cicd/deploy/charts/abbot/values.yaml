@@ -87,7 +87,7 @@ config:
           allowedIPs:
           - 127.255.0.0/16
     proxies:
-    - address: "10.0.0.1"
+    - address: "10.0.0.1" # yamllint disable-line rule:quoted-strings
       # protocols to be proxied, will proxy all if not set
       protocols:
       - tcp
@@ -97,7 +97,7 @@ config:
       - 172.16.0.0/16
       - 192.168.100.0/24
       tproxy:
-        mark: "0x01/0x01"
+        mark: 0x01/0x01
         tcp: false
         udp: true
         routing:
@@ -113,6 +113,7 @@ config:
     networks:
     - containerDev: eth0
       # template used to generate cni config
+      # yamllint disable rule:line-length
       template: |
         {
           "cniVersion": "0.3.1",
