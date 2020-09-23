@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: {{ include "abbot.fullname" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
     {{- include "abbot.labels" . | nindent 4 }}
 spec:

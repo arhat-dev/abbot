@@ -6,7 +6,7 @@ image:
   repository: docker.io/arhatdev/abbot
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "amd64"
+  tag: latest
 
 imagePullSecrets: []
 nameOverride: ""
@@ -29,53 +29,122 @@ affinity: {}
 config:
   abbot:
     log:
-    - level: debug
+    - level: verbose
       format: console
       file: stderr
+    # - level: info
+    #   format: console
+    #   file: /var/log/abbot.log
 
     # abbot listen address, scheme can be one of [tcp, unix]
     # then listener is designed to be host local, and should
-    # not be exposed to the network
+    # not be exposed to the network (dangerous)
     listen: unix:///var/run/abbot.sock
 
-  services:
-    network:
-      # data dir to store container network config
-      dataDir: /var/lib/abbot/net
-      # ip ranges to be forwarded to your cluster proxy
-      clusterIPRanges:
-      - 10.1.0.0/16
+  hostNetwork:
+    interfaces:
+    - driver: bridge
+      config:
+        name: abbot0
+        alias: ""
+        promisc: false
+        mtu: 1440
+        txQueueLen: 1000
+        hardwareAddr: ""
+        addresses:
+        - 10.0.0.1/24
+        # hairpin: true
+        # guard: false
+        # fastLeave: false
+        # rootBlock: false
+        # learning: false
+        # flood: false
+        # proxyArp: false
+        # proxyArpWifi: false
+    - driver: wireguard
+      config:
+        # device name
+        name: utun5
+        # device mtu
+        mtu: 1400
+        # log output to stderr
+        logLevel: debug
+        # (optional) private key (base64 encoded)
+        privateKey: mGmgXNWBjx2sQy2kRYcnpkHTAi9j7cCrQZzGKlK96ko=
+        # local udp port
+        listenPort: 65510
+        # firewall mark
+        firewallMark: 0
+        # wireguard peers
+        peers:
+          # public key is required (base64 encoded)
+        - publicKey: xkmpiToCbDDAHgWnJl1GgnvIaCvwcS617UK1tVMpE3U=
+          preSharedKey: ""
+          # udp endpoint address
+          endpoint: localhost:1400
+          persistentKeepaliveInterval: 10s
+          # ip addresses in this vpn
+          allowedIPs:
+          - 127.255.0.0/16
+    proxies:
+    - address: "10.0.0.1"
+      # protocols to be proxied, will proxy all if not set
+      protocols:
+      - tcp
+      - udp
+      - icmp
+      ipRanges:
+      - 172.16.0.0/16
+      - 192.168.100.0/24
+      tproxy:
+        mark: "0x01/0x01"
+        tcp: false
+        udp: true
+        routing:
+          # routing rule priority for tproxy fwmark routing
+          rulePriority:
+          # routing table for tproxy fwmark lookup, 1 - 255
+          table: 200
 
-      # proxy is the L4 (TCP/UDP) proxy service to redirect all
-      # cluster traffic to your kubernetes cluster
-      proxy:
-        # ipv4 tcp/udp proxy address, address MUST be in the form of <ip>:<port>
-        # leave it empty if no ipv4 proxy will be used
-        addr4: "127.0.0.1:65000"
-        # ipv6 tcp/udp proxy address, address MUST be in the form of <ip>:<port>
-        # leave it empty if no ipv6 proxy will be used
-        addr6: "[::1]:65000"
-
-        tproxy:
-          # tproxy mark
-          mark: "1"
-          # use tcp tproxy (if false, will use DNAT for forwarding)
-          tcp: false
-          # use udp tproxy (if false, will use DNAT for forwarding)
-          udp: true
-
-          # routing options for tproxy traffic
-          routing:
-            # routing table for fwmark lookup
-            table: 100
-            # routing rule priority for fwmark
-            rulePriority: 30000
-
-      # cni related config
-      cni:
-        # cni plugins lookup path
-        lookupPaths: ["/opt/cni/bin"]
-        # the network device (interface) name will be used in container
-        containerDev: eth0
-        # the host bridge name
-        hostDev: abbot0
+  containerNetwork:
+    dataDir: /var/lib/abbot/container
+    cniLookupPaths:
+    - /opt/cni/bin
+    networks:
+    - containerDev: eth0
+      # template used to generate cni config
+      template: |
+        {
+          "cniVersion": "0.3.1",
+          "name": "abbot",
+          "plugins": [
+            {
+              "type": "bridge",
+              "bridge": "abbot0",
+              "isGateway": true,
+              "isDefaultGateway": true,
+              "ipMasq": true,
+              "forceAddress": true,
+              "ipam": {
+                "type": "host-local",
+                "ranges": [{{ if gt (len .IPv4Subnet) 0 }}
+                  [{
+                    "subnet": "{{ .IPv4Subnet }}",
+                    "routes": [{ "dst": "0.0.0.0/0" }]
+                  }]{{ end }}{{ if and (gt (len .IPv6Subnet) 0) (gt (len .IPv4Subnet) 0) }},{{ end }}{{ if gt (len .IPv6Subnet) 0 }}
+                  [{
+                    "subnet": "{{ .IPv6Subnet }}"
+                  }]{{ end }}
+                ]
+              }
+            },
+            {
+              "type": "portmap",
+              "capabilities": { "portMappings": true }
+            },
+            {
+              "type": "bandwidth",
+              "capabilities": { "bandwidth": true }
+            }
+          ]
+        }

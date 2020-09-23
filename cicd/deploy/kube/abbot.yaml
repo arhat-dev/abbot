@@ -4,6 +4,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: abbot
+  namespace: default
   labels:
     helm.sh/chart: abbot-0.1.0
     app.kubernetes.io/name: abbot
@@ -18,33 +19,98 @@ data:
       log:
       - file: stderr
         format: console
-        level: debug
-    services:
-      network:
-        clusterIPRanges:
-        - 10.1.0.0/16
-        cni:
-          containerDev: eth0
-          hostDev: abbot0
-          lookupPaths:
-          - /opt/cni/bin
-        dataDir: /var/lib/abbot/net
-        proxy:
-          addr4: 127.0.0.1:65000
-          addr6: '[::1]:65000'
-          tproxy:
-            mark: "1"
-            routing:
-              rulePriority: 30000
-              table: 100
-            tcp: false
-            udp: true
+        level: verbose
+    containerNetwork:
+      cniLookupPaths:
+      - /opt/cni/bin
+      dataDir: /var/lib/abbot/container
+      networks:
+      - containerDev: eth0
+        template: |
+          {
+            "cniVersion": "0.3.1",
+            "name": "abbot",
+            "plugins": [
+              {
+                "type": "bridge",
+                "bridge": "abbot0",
+                "isGateway": true,
+                "isDefaultGateway": true,
+                "ipMasq": true,
+                "forceAddress": true,
+                "ipam": {
+                  "type": "host-local",
+                  "ranges": [{{ if gt (len .IPv4Subnet) 0 }}
+                    [{
+                      "subnet": "{{ .IPv4Subnet }}",
+                      "routes": [{ "dst": "0.0.0.0/0" }]
+                    }]{{ end }}{{ if and (gt (len .IPv6Subnet) 0) (gt (len .IPv4Subnet) 0) }},{{ end }}{{ if gt (len .IPv6Subnet) 0 }}
+                    [{
+                      "subnet": "{{ .IPv6Subnet }}"
+                    }]{{ end }}
+                  ]
+                }
+              },
+              {
+                "type": "portmap",
+                "capabilities": { "portMappings": true }
+              },
+              {
+                "type": "bandwidth",
+                "capabilities": { "bandwidth": true }
+              }
+            ]
+          }
+    hostNetwork:
+      interfaces:
+      - config:
+          addresses:
+          - 10.0.0.1/24
+          alias: ""
+          hardwareAddr: ""
+          mtu: 1440
+          name: abbot0
+          promisc: false
+          txQueueLen: 1000
+        driver: bridge
+      - config:
+          firewallMark: 0
+          listenPort: 65510
+          logLevel: debug
+          mtu: 1400
+          name: utun5
+          peers:
+          - allowedIPs:
+            - 127.255.0.0/16
+            endpoint: localhost:1400
+            persistentKeepaliveInterval: 10s
+            preSharedKey: ""
+            publicKey: xkmpiToCbDDAHgWnJl1GgnvIaCvwcS617UK1tVMpE3U=
+          privateKey: mGmgXNWBjx2sQy2kRYcnpkHTAi9j7cCrQZzGKlK96ko=
+        driver: wireguard
+      proxies:
+      - address: 10.0.0.1
+        ipRanges:
+        - 172.16.0.0/16
+        - 192.168.100.0/24
+        protocols:
+        - tcp
+        - udp
+        - icmp
+        tproxy:
+          mark: 0x01/0x01
+          routing:
+            rulePriority: null
+            table: 200
+          tcp: false
+          udp: true
 ---
 # Source: abbot/templates/daemonset.yaml
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: abbot
+  namespace: default
   labels:
     helm.sh/chart: abbot-0.1.0
     app.kubernetes.io/name: abbot
@@ -69,17 +135,17 @@ spec:
         {}
       # only select nodes in this namespace
       nodeSelector:
-        arhat.dev/namespace: edge
+        arhat.dev/namespace: default
       tolerations:
         - key: arhat.dev/namespace
-          value: edge
+          value: default
         - key: node.kubernetes.io/unschedulable
           operator: Exists
       hostPID: true
       hostNetwork: true
       containers:
         - name: abbot # abbot container name MUST be abbot
-          image: "docker.io/arhatdev/abbot:amd64"
+          image: "docker.io/arhatdev/abbot:latest"
           imagePullPolicy: Always
           command:
             - /abbot

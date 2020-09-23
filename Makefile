@@ -51,5 +51,8 @@ image.push.windows.all: \
 # packaging
 include scripts/package/abbot.mk
 
+# manifest generation
+include scripts/gen/manifest.mk
+
 # optional private scripts
 -include private/scripts.mk
