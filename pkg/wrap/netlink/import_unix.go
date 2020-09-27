@@ -6,12 +6,6 @@ import (
 	"github.com/vishvananda/netlink"
 )
 
-// nolint:golint
-const (
-	FAMILY_ALL = netlink.FAMILY_ALL
-	SCOPE_LINK = netlink.SCOPE_LINK
-)
-
 const (
 	OperUp   = netlink.OperUp
 	OperDown = netlink.OperDown
