@@ -43,16 +43,16 @@ config:
 
   hostNetwork:
     interfaces:
-    - driver: bridge
+    - name: abbot0
+      driver: bridge
       config:
-        name: abbot0
+        addresses:
+        - 10.0.0.1/24
         alias: ""
         promisc: false
         mtu: 1440
         txQueueLen: 1000
         hardwareAddr: ""
-        addresses:
-        - 10.0.0.1/24
         # hairpin: true
         # guard: false
         # fastLeave: false
@@ -61,10 +61,11 @@ config:
         # flood: false
         # proxyArp: false
         # proxyArpWifi: false
-    - driver: wireguard
+    - name: utun5
+      driver: wireguard
       config:
-        # device name
-        name: utun5
+        addresses:
+        - 10.100.0.1/32
         # device mtu
         mtu: 1400
         # log output to stderr
@@ -73,8 +74,12 @@ config:
         privateKey: mGmgXNWBjx2sQy2kRYcnpkHTAi9j7cCrQZzGKlK96ko=
         # local udp port
         listenPort: 65510
-        # firewall mark
-        firewallMark: 0
+        routing:
+          enabled: true
+          # routing table
+          table: 0
+          # firewall mark
+          firewallMark: 0
         # wireguard peers
         peers:
           # public key is required (base64 encoded)
@@ -85,7 +90,7 @@ config:
           persistentKeepaliveInterval: 10s
           # ip addresses in this vpn
           allowedIPs:
-          - 127.255.0.0/16
+          - 10.100.0.2/32
     proxies:
     - address: "10.0.0.1" # yamllint disable-line rule:quoted-strings
       # protocols to be proxied, will proxy all if not set
@@ -108,44 +113,42 @@ config:
 
   containerNetwork:
     dataDir: /var/lib/abbot/container
-    cniLookupPaths:
+    cniPluginsLookupPaths:
     - /opt/cni/bin
-    networks:
-    - containerDev: eth0
-      # template used to generate cni config
-      # yamllint disable rule:line-length
-      template: |
-        {
-          "cniVersion": "0.3.1",
-          "name": "abbot",
-          "plugins": [
-            {
-              "type": "bridge",
-              "bridge": "abbot0",
-              "isGateway": true,
-              "isDefaultGateway": true,
-              "ipMasq": true,
-              "forceAddress": true,
-              "ipam": {
-                "type": "host-local",
-                "ranges": [{{ if gt (len .IPv4Subnet) 0 }}
-                  [{
-                    "subnet": "{{ .IPv4Subnet }}",
-                    "routes": [{ "dst": "0.0.0.0/0" }]
-                  }]{{ end }}{{ if and (gt (len .IPv6Subnet) 0) (gt (len .IPv4Subnet) 0) }},{{ end }}{{ if gt (len .IPv6Subnet) 0 }}
-                  [{
-                    "subnet": "{{ .IPv6Subnet }}"
-                  }]{{ end }}
-                ]
-              }
-            },
-            {
-              "type": "portmap",
-              "capabilities": { "portMappings": true }
-            },
-            {
-              "type": "bandwidth",
-              "capabilities": { "bandwidth": true }
+    containerInterfaceName: eth0
+    # template used to generate cni config
+    template: |
+      {
+        "cniVersion": "0.3.1",
+        "name": "abbot",
+        "plugins": [
+          {
+            "type": "bridge",
+            "bridge": "abbot0",
+            "isGateway": true,
+            "isDefaultGateway": true,
+            "ipMasq": true,
+            "forceAddress": true,
+            "ipam": {
+              "type": "host-local",
+              "ranges": [{{ if gt (len .IPv4Subnet) 0 }}
+                [{
+                  "subnet": "{{ .IPv4Subnet }}",
+                  "routes": [{ "dst": "0.0.0.0/0" }]
+                }]{{ end }}{{ if and (gt (len .IPv6Subnet) 0) (gt (len .IPv4Subnet) 0) }},{{ end }}{{ if gt (len .IPv6Subnet) 0 }}
+                [{
+                  "subnet": "{{ .IPv6Subnet }}"
+                }]{{ end }}
+              ]
             }
-          ]
-        }
+          },
+          {
+            "type": "portmap",
+            "capabilities": { "portMappings": true }
+          },
+          {
+            "type": "bandwidth",
+            "capabilities": { "bandwidth": true }
+          }
+        ]
+      }
