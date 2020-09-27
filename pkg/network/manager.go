@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"runtime"
 	"sync"
+	"text/template"
 	"time"
 
 	"arhat.dev/pkg/log"
@@ -16,14 +17,15 @@ import (
 )
 
 type Manager struct {
-	ctx              context.Context
-	logger           log.Interface
-	hostNetwork      *conf.HostNetworkConfig
-	containerNetwork *conf.ContainerNetworkConfig
+	ctx    context.Context
+	logger log.Interface
 
-	hostDevices []types.Driver
+	hostDeviceNameSeq []string
+	hostDevices       map[string]types.Driver
+	hostMU            *sync.RWMutex
 
-	mu *sync.RWMutex
+	containerDev      string
+	cniConfigTemplate *template.Template
 }
 
 func NewManager(
@@ -31,78 +33,127 @@ func NewManager(
 	hostNetwork *conf.HostNetworkConfig,
 	containerNetwork *conf.ContainerNetworkConfig,
 ) (*Manager, error) {
+
+	var nameSeq []string
+	hostDevices := make(map[string]types.Driver)
+	for _, n := range hostNetwork.Interfaces {
+		if _, ok := hostDevices[n.Name]; ok {
+			return nil, fmt.Errorf("invalid duplicate interface name %s", n.Name)
+		}
+
+		d, err := driver.NewDriver(ctx, n.Driver, runtime.GOOS, n.Name, n.Config)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create driver %s for %s: %w", n.Driver, n.Name, err)
+		}
+
+		hostDevices[n.Name] = d
+		nameSeq = append(nameSeq, n.Name)
+	}
+
+	tmpl, err := template.New("").Parse(containerNetwork.Template)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse cni config template: %w", err)
+	}
+
 	return &Manager{
-		ctx:              ctx,
-		logger:           log.Log,
-		hostNetwork:      hostNetwork,
-		containerNetwork: containerNetwork,
-		mu:               new(sync.RWMutex),
+		ctx:    ctx,
+		logger: log.Log,
+
+		hostDeviceNameSeq: nameSeq,
+		hostDevices:       hostDevices,
+
+		containerDev:      containerNetwork.ContainerInterfaceName,
+		cniConfigTemplate: tmpl,
+
+		hostMU: new(sync.RWMutex),
 	}, nil
 }
 
-func ensureAllDevices(hostDevices []types.Driver) error {
-	var err error
-	for _, dev := range hostDevices {
-		err = multierr.Append(err, dev.Ensure(true))
-	}
-
-	return err
-}
-
 func (m *Manager) Start() error {
-	err := func() error {
-		m.mu.Lock()
-		defer m.mu.Unlock()
+	var err error
+	err = func() error {
+		m.hostMU.Lock()
+		defer m.hostMU.Unlock()
 
-		for _, n := range m.hostNetwork.Interfaces {
-			m.logger.D("create driver", log.String("driver", n.Driver))
-			d, err := driver.NewDriver(n.Driver, runtime.GOOS, n.Config)
-			if err != nil {
-				return fmt.Errorf("failed to create driver %s: %w", n.Driver, err)
-			}
-
-			m.hostDevices = append(m.hostDevices, d)
-		}
-
-		m.logger.D("ensuring all devices for the first time")
-		err := ensureAllDevices(m.hostDevices)
+		m.logger.D("ensuring all host interfaces for the first time")
+		m.hostDeviceNameSeq, err = ensureAllDevices(m.hostDeviceNameSeq, m.hostDevices)
 		if err != nil {
-			return fmt.Errorf("failed to ensure all network device running for the first time: %w", err)
+			return fmt.Errorf("failed to ensure all host interfaces running for the first time: %w", err)
 		}
+
 		return nil
 	}()
 	if err != nil {
 		return err
 	}
 
-	m.logger.V("all devices ensured")
-
-	go func() {
-		m.logger.V("starting all devices ensure routine")
-		tk := time.NewTicker(5 * time.Second)
-		defer tk.Stop()
-
-		for {
-			select {
-			case <-tk.C:
-				m.mu.RLock()
-				m.logger.D("routine: ensuring all devices")
-				err2 := ensureAllDevices(m.hostDevices)
-				if err2 != nil {
-					m.logger.I("failed to ensure all network device running", log.Error(err2))
-				} else {
-					m.logger.D("routine: all devices ensured")
-				}
-				m.mu.RUnlock()
-			case <-m.ctx.Done():
-				return
-			}
-		}
-	}()
+	m.logger.V("all host interfaces ensured")
+	m.logger.D("starting host interfaces ensure routine")
+	go m.ensureHostInterfacesPeriodically(5 * time.Second)
 
 	// nolint:gosimple
 	select {
 	case <-m.ctx.Done():
-		return nil
 	}
+
+	m.hostMU.Lock()
+	defer m.hostMU.Unlock()
+	for i := len(m.hostDeviceNameSeq) - 1; i >= 0; i-- {
+		name := m.hostDeviceNameSeq[i]
+		dev, ok := m.hostDevices[name]
+		if !ok {
+			continue
+		}
+
+		err = dev.Delete()
+		if err != nil {
+			m.logger.I("failed to delete device", log.String("ifname", name), log.Error(err))
+		}
+	}
+
+	return nil
+}
+
+func (m *Manager) ensureHostInterfacesPeriodically(interval time.Duration) {
+	tk := time.NewTicker(interval)
+	defer tk.Stop()
+
+	for {
+		select {
+		case <-tk.C:
+			m.hostMU.RLock()
+			m.logger.V("routine: ensuring all host interfaces")
+			_, err := ensureAllDevices(m.hostDeviceNameSeq, m.hostDevices)
+			if err != nil {
+				m.logger.I("failed to ensure all host interfaces running", log.Error(err))
+			} else {
+				m.logger.V("routine: all host interfaces running")
+			}
+			m.hostMU.RUnlock()
+		case <-m.ctx.Done():
+			return
+		}
+	}
+}
+
+func ensureAllDevices(devSeq []string, hostDevices map[string]types.Driver) ([]string, error) {
+	var (
+		newSeq []string
+		err    error
+	)
+	for _, devName := range devSeq {
+		dev, ok := hostDevices[devName]
+		if !ok {
+			continue
+		}
+
+		err2 := dev.Ensure(true)
+		if err2 != nil {
+			err = multierr.Append(err, fmt.Errorf("failed to ensure driver for %s: %w", devName, err2))
+		}
+
+		newSeq = append(newSeq, dev.Name())
+	}
+
+	return newSeq, err
 }

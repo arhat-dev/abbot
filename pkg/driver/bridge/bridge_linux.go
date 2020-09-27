@@ -2,6 +2,7 @@ package bridge
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net"
 
@@ -9,8 +10,8 @@ import (
 	"go.uber.org/multierr"
 
 	"arhat.dev/abbot/pkg/driver"
-	"arhat.dev/abbot/pkg/driver/driverutil"
 	"arhat.dev/abbot/pkg/types"
+	"arhat.dev/abbot/pkg/util"
 )
 
 func init() {
@@ -19,7 +20,6 @@ func init() {
 
 func NewConfig() interface{} {
 	return &Config{
-		Name:         "",
 		Alias:        "",
 		Promisc:      false,
 		MTU:          1440,
@@ -38,7 +38,6 @@ func NewConfig() interface{} {
 }
 
 type Config struct {
-	Name      string   `json:"name" yaml:"name"`
 	Addresses []string `json:"addresses" yaml:"addresses"`
 
 	Alias        string `json:"alias" yaml:"alias"`
@@ -57,9 +56,9 @@ type Config struct {
 	ProxyArpWiFi bool `json:"proxyArpWifi" yaml:"proxyArpWifi"`
 }
 
-func (c *Config) GetLinkAttrs() netlink.LinkAttrs {
+func (c *Config) GetLinkAttrs(name string) netlink.LinkAttrs {
 	ret := netlink.NewLinkAttrs()
-	ret.Name = c.Name
+	ret.Name = name
 	ret.Alias = c.Alias
 	if c.Promisc {
 		ret.Promisc = 1
@@ -86,18 +85,40 @@ func (c *Config) GetLinkAttrs() netlink.LinkAttrs {
 	return ret
 }
 
-func NewDriver(cfg interface{}) (types.Driver, error) {
+func NewDriver(ctx context.Context, name string, cfg interface{}) (types.Driver, error) {
 	config, ok := cfg.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("invalid non bridge driver config")
 	}
 
-	return &Driver{h: &netlink.Handle{}, config: config}, nil
+	addrs, err := util.ParseIPs(config.Addresses)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse ip addresses: %w", err)
+	}
+
+	return &Driver{
+		ctx:  ctx,
+		name: name,
+
+		h: &netlink.Handle{},
+
+		ips:    addrs,
+		config: config,
+	}, nil
 }
 
 type Driver struct {
-	h      *netlink.Handle
+	ctx  context.Context
+	name string
+
+	h *netlink.Handle
+
+	ips    map[string]*netlink.Addr
 	config *Config
+}
+
+func (d *Driver) Name() string {
+	return d.name
 }
 
 func (d *Driver) updateLink(link netlink.Link) error {
@@ -112,6 +133,10 @@ func (d *Driver) updateLink(link netlink.Link) error {
 		if err != nil {
 			return fmt.Errorf("failed to parse hw address: %w", err)
 		}
+	}
+
+	if attrs.Protinfo == nil {
+		attrs.Protinfo = &netlink.Protinfo{}
 	}
 
 	for i := 0; i < 100; i++ {
@@ -170,7 +195,7 @@ func (d *Driver) updateLink(link netlink.Link) error {
 
 func (d *Driver) Ensure(up bool) error {
 	var (
-		name   = d.config.Name
+		name   = d.name
 		create bool
 	)
 
@@ -201,7 +226,7 @@ func (d *Driver) Ensure(up bool) error {
 
 	if create {
 		err = d.h.LinkAdd(&netlink.Bridge{
-			LinkAttrs:         d.config.GetLinkAttrs(),
+			LinkAttrs:         d.config.GetLinkAttrs(name),
 			MulticastSnooping: nil,
 			HelloTime:         nil,
 		})
@@ -215,7 +240,7 @@ func (d *Driver) Ensure(up bool) error {
 		return fmt.Errorf("failed to recheck existing link %s: %w", name, err)
 	}
 
-	err = driverutil.EnsureAddresses(d.h, link, d.config.Addresses)
+	err = util.EnsureIPs(d.h, link, d.ips)
 	if err != nil {
 		return fmt.Errorf("failed to ensure link addresses: %w", err)
 	}
@@ -238,8 +263,16 @@ func (d *Driver) Ensure(up bool) error {
 }
 
 func (d *Driver) Delete() error {
+	select {
+	case <-d.ctx.Done():
+		// application exited, this is a system device, keep it
+		return nil
+	default:
+		// application still running, we should delete this device
+	}
+
 	var (
-		name = d.config.Name
+		name = d.name
 	)
 
 	link, err := d.h.LinkByName(name)

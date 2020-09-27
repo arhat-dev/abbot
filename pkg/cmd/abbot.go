@@ -75,7 +75,7 @@ func NewAbbotCmd() *cobra.Command {
 	)
 	// cni plugin
 	flags.StringSliceVar(
-		&config.ContainerNetwork.CNILookupPaths,
+		&config.ContainerNetwork.CNIPluginsLookupPaths,
 		"ctr.cniLookupPath",
 		[]string{constant.DefaultCNIPluginsDir},
 		"set paths can find cni plugins",

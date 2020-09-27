@@ -1,6 +1,7 @@
 package driver
 
 import (
+	"context"
 	"fmt"
 
 	"arhat.dev/abbot/pkg/types"
@@ -17,7 +18,7 @@ type factory struct {
 }
 
 type (
-	FactoryFunc       func(cfg interface{}) (types.Driver, error)
+	FactoryFunc       func(ctx context.Context, name string, cfg interface{}) (types.Driver, error)
 	ConfigFactoryFunc func() interface{}
 )
 
@@ -33,7 +34,7 @@ func Register(name, os string, newDriver FactoryFunc, newDriverConfig ConfigFact
 	}
 }
 
-func NewDriver(name, os string, cfg interface{}) (types.Driver, error) {
+func NewDriver(ctx context.Context, name, os, ifname string, cfg interface{}) (types.Driver, error) {
 	f, ok := supportedDrivers[key{
 		name: name,
 		os:   os,
@@ -42,7 +43,7 @@ func NewDriver(name, os string, cfg interface{}) (types.Driver, error) {
 		return nil, fmt.Errorf("driver for %s on %s not found", name, os)
 	}
 
-	return f.newDriver(cfg)
+	return f.newDriver(ctx, ifname, cfg)
 }
 
 func NewConfig(name, os string) (interface{}, error) {

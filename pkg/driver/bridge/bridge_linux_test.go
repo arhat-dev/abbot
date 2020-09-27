@@ -1,6 +1,7 @@
 package bridge
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,7 +21,7 @@ func TestDriver_Ensure(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			d, err := NewDriver(test.config)
+			d, err := NewDriver(context.TODO(), "foo", test.config)
 			assert.NoError(t, err)
 
 			err = d.Ensure(false)
