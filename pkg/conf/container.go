@@ -2,7 +2,7 @@ package conf
 
 type ContainerNetworkConfig struct {
 	// DataDir to store pod container network config
-	DataDir               string   `json:"dataDir" yaml:"dataDir"`
+	DataDir string `json:"dataDir" yaml:"dataDir"`
 
 	CNIPluginsLookupPaths []string `json:"cniPluginsLookupPaths" yaml:"cniPluginsLookupPaths"`
 

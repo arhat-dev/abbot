@@ -1,11 +1,13 @@
 package conf
 
 import (
-	"arhat.dev/abbot/pkg/driver"
 	"encoding/json"
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"runtime"
+
+	"gopkg.in/yaml.v2"
+
+	"arhat.dev/abbot/pkg/driver"
 )
 
 type InterfaceConfig struct {

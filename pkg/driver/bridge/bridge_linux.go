@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"net"
 
-	"arhat.dev/abbot/pkg/wrap/netlink"
 	"go.uber.org/multierr"
 
 	"arhat.dev/abbot/pkg/driver"
 	"arhat.dev/abbot/pkg/types"
 	"arhat.dev/abbot/pkg/util"
+	"arhat.dev/abbot/pkg/wrap/netlink"
 )
 
 func init() {
