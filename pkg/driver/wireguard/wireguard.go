@@ -121,7 +121,7 @@ func (d *Driver) Ensure(up bool) (err error) {
 		return nil
 	default:
 	}
-	
+
 	d.mu.Lock()
 	defer d.mu.Unlock()
 

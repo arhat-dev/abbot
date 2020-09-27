@@ -117,6 +117,7 @@ config:
     - /opt/cni/bin
     containerInterfaceName: eth0
     # template used to generate cni config
+    # yamllint disable rule:line-length
     template: |
       {
         "cniVersion": "0.3.1",
