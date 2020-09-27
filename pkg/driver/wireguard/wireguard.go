@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/vishvananda/netlink"
+	"arhat.dev/abbot/pkg/wrap/netlink"
 
 	"arhat.dev/abbot/pkg/util"
 

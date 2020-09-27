@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/vishvananda/netlink"
+	"arhat.dev/abbot/pkg/wrap/netlink"
 )
 
 func EnsureRoutes(h *netlink.Handle, link netlink.Link, table int, ipRanges map[string]*net.IPNet) error {

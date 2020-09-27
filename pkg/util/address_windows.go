@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/vishvananda/netlink"
+	"arhat.dev/abbot/pkg/wrap/netlink"
 	"golang.org/x/sys/windows"
 	"golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
 )

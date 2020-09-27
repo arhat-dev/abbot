@@ -8,7 +8,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/vishvananda/netlink"
+	"arhat.dev/abbot/pkg/wrap/netlink"
 )
 
 func EnsureIPs(ifname string, ipAddresses map[string]*netlink.Addr) error {

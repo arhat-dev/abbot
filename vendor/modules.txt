@@ -5,18 +5,8 @@ arhat.dev/abbot-proto/abbotgopb
 ## explicit
 arhat.dev/pkg/envhelper
 arhat.dev/pkg/log
-# github.com/containernetworking/cni v0.7.1
-## explicit
-github.com/containernetworking/cni/libcni
-github.com/containernetworking/cni/pkg/invoke
-github.com/containernetworking/cni/pkg/types
-github.com/containernetworking/cni/pkg/types/020
-github.com/containernetworking/cni/pkg/types/current
-github.com/containernetworking/cni/pkg/version
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
-# github.com/go-logr/logr v0.2.0
-github.com/go-logr/logr
 # github.com/gogo/protobuf v1.3.1
 github.com/gogo/protobuf/gogoproto
 github.com/gogo/protobuf/proto
@@ -50,7 +40,6 @@ github.com/stretchr/testify/assert
 github.com/vishvananda/netlink
 github.com/vishvananda/netlink/nl
 # github.com/vishvananda/netns v0.0.0-20171111001504-be1fbeda1936
-## explicit
 github.com/vishvananda/netns
 # go.uber.org/atomic v1.6.0
 go.uber.org/atomic
@@ -178,24 +167,6 @@ google.golang.org/grpc/tap
 gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.0-20200605160147-a5ece683394c
 gopkg.in/yaml.v3
-# k8s.io/apimachinery v0.18.8 => github.com/kubernetes/apimachinery v0.18.8
-k8s.io/apimachinery/pkg/util/clock
-k8s.io/apimachinery/pkg/util/errors
-k8s.io/apimachinery/pkg/util/runtime
-k8s.io/apimachinery/pkg/util/sets
-k8s.io/apimachinery/pkg/util/version
-k8s.io/apimachinery/pkg/util/wait
-# k8s.io/klog v1.0.0 => github.com/kubernetes/klog v1.0.0
-k8s.io/klog
-# k8s.io/klog/v2 v2.0.0 => github.com/kubernetes/klog/v2 v2.3.0
-k8s.io/klog/v2
-# k8s.io/kubernetes v1.18.6 => github.com/kubernetes/kubernetes v1.18.8
-## explicit
-k8s.io/kubernetes/pkg/util/iptables
-# k8s.io/utils v0.0.0-20200324210504-a9aa75ae1b89 => github.com/kubernetes/utils v0.0.0-20200821003339-5e75c0163111
-## explicit
-k8s.io/utils/exec
-k8s.io/utils/trace
 # k8s.io/api => github.com/kubernetes/api v0.18.8
 # k8s.io/apiextensions-apiserver => github.com/kubernetes/apiextensions-apiserver v0.18.8
 # k8s.io/apimachinery => github.com/kubernetes/apimachinery v0.18.8

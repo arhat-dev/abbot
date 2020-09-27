@@ -3,7 +3,7 @@ package util
 import (
 	"fmt"
 
-	"github.com/vishvananda/netlink"
+	"arhat.dev/abbot/pkg/wrap/netlink"
 )
 
 func EnsureIPs(h *netlink.Handle, link netlink.Link, ipAddresses map[string]*netlink.Addr) error {

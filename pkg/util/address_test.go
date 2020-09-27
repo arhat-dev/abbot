@@ -3,8 +3,8 @@ package util
 import (
 	"testing"
 
+	"arhat.dev/abbot/pkg/wrap/netlink"
 	"github.com/stretchr/testify/assert"
-	"github.com/vishvananda/netlink"
 )
 
 func TestGetAddressesToAddAndToDelete(t *testing.T) {

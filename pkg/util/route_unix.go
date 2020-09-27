@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/vishvananda/netlink"
+	"arhat.dev/abbot/pkg/wrap/netlink"
 )
 
 func EnsureRoutes(ifname string, table int, ipRanges map[string]*net.IPNet) error {

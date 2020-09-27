@@ -5,7 +5,7 @@ package wireguard
 import (
 	"net"
 
-	"github.com/vishvananda/netlink"
+	"arhat.dev/abbot/pkg/wrap/netlink"
 
 	"arhat.dev/abbot/pkg/util"
 )

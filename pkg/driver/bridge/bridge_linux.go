@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/vishvananda/netlink"
+	"arhat.dev/abbot/pkg/wrap/netlink"
 	"go.uber.org/multierr"
 
 	"arhat.dev/abbot/pkg/driver"

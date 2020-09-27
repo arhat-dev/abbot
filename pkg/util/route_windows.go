@@ -86,9 +86,9 @@ func ensureRoutes(iface *winipcfg.MibIPInterfaceRow, actual []*winipcfg.MibIPfor
 
 func getRoutes(v4, v6 *winipcfg.MibIPInterfaceRow) (ipv4, ipv6 []*winipcfg.MibIPforwardRow2, err error) {
 	if v4 != nil {
-		ipftv4, err := winipcfg.GetIPForwardTable2(windows.AF_INET)
-		if err != nil {
-			err = fmt.Errorf("failed to check ipv4 forward table: %w", err)
+		ipftv4, err2 := winipcfg.GetIPForwardTable2(windows.AF_INET)
+		if err2 != nil {
+			err = fmt.Errorf("failed to check ipv4 forward table: %w", err2)
 			return
 		}
 
@@ -102,9 +102,9 @@ func getRoutes(v4, v6 *winipcfg.MibIPInterfaceRow) (ipv4, ipv6 []*winipcfg.MibIP
 	}
 
 	if v6 != nil {
-		ipftv6, err := winipcfg.GetIPForwardTable2(windows.AF_INET6)
-		if err != nil {
-			err = fmt.Errorf("failed to check ipv6 forward table: %w", err)
+		ipftv6, err2 := winipcfg.GetIPForwardTable2(windows.AF_INET6)
+		if err2 != nil {
+			err = fmt.Errorf("failed to check ipv6 forward table: %w", err2)
 			return
 		}
 

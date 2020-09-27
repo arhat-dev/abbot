@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/vishvananda/netlink"
+	"arhat.dev/abbot/pkg/wrap/netlink"
 )
 
 func GetInterfaceIPs(ifname string) (map[string]*netlink.Addr, error) {
