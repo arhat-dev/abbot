@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: MIT
  *
- * Copyright (C) 2017-2019 WireGuard LLC. All Rights Reserved.
+ * Copyright (C) 2017-2020 WireGuard LLC. All Rights Reserved.
  */
 
 package device
@@ -12,6 +12,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"golang.zx2c4.com/wireguard/conn"
 )
 
 const (
@@ -24,10 +26,14 @@ type Peer struct {
 	keypairs                    Keypairs
 	handshake                   Handshake
 	device                      *Device
-	endpoint                    Endpoint
+	endpoint                    conn.Endpoint
 	persistentKeepaliveInterval uint16
 
-	// This must be 64-bit aligned, so make sure the above members come out to even alignment and pad accordingly
+	// These fields are accessed with atomic operations, which must be
+	// 64-bit aligned even on 32-bit platforms. Go guarantees that an
+	// allocated struct will be 64-bit aligned. So we place
+	// atomically-accessed fields up front, so that they can share in
+	// this alignment before smaller fields throw it off.
 	stats struct {
 		txBytes           uint64 // bytes send to peer (endpoint)
 		rxBytes           uint64 // bytes received from peer
@@ -217,10 +223,10 @@ func (peer *Peer) ZeroAndFlushAll() {
 	keypairs.Lock()
 	device.DeleteKeypair(keypairs.previous)
 	device.DeleteKeypair(keypairs.current)
-	device.DeleteKeypair(keypairs.next)
+	device.DeleteKeypair(keypairs.loadNext())
 	keypairs.previous = nil
 	keypairs.current = nil
-	keypairs.next = nil
+	keypairs.storeNext(nil)
 	keypairs.Unlock()
 
 	// clear handshake state
@@ -248,7 +254,7 @@ func (peer *Peer) ExpireCurrentKeypairs() {
 		keypairs.current.sendNonce = RejectAfterMessages
 	}
 	if keypairs.next != nil {
-		keypairs.next.sendNonce = RejectAfterMessages
+		keypairs.loadNext().sendNonce = RejectAfterMessages
 	}
 	keypairs.Unlock()
 }
@@ -286,7 +292,7 @@ func (peer *Peer) Stop() {
 
 var RoamingDisabled bool
 
-func (peer *Peer) SetEndpointFromPacket(endpoint Endpoint) {
+func (peer *Peer) SetEndpointFromPacket(endpoint conn.Endpoint) {
 	if RoamingDisabled {
 		return
 	}

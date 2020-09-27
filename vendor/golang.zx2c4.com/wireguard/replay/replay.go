@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: MIT
  *
- * Copyright (C) 2017-2019 WireGuard LLC. All Rights Reserved.
+ * Copyright (C) 2017-2020 WireGuard LLC. All Rights Reserved.
  */
 
 package replay
@@ -21,7 +21,7 @@ const (
 const (
 	CounterRedundantBitsLog = _WordLogSize + 3
 	CounterRedundantBits    = _WordSize * 8
-	CounterBitsTotal        = 2048
+	CounterBitsTotal        = 8192
 	CounterWindowSize       = uint64(CounterBitsTotal - CounterRedundantBits)
 )
 

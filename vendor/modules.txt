@@ -1,4 +1,4 @@
-# arhat.dev/abbot-proto v0.0.0-20200908152444-df59421a64d2
+# arhat.dev/abbot-proto v0.0.0-20200923231045-0f9ee00debc7
 ## explicit
 arhat.dev/abbot-proto/abbotgopb
 # arhat.dev/pkg v0.0.0-20200814094720-eac4d5d5680b
@@ -72,7 +72,7 @@ golang.org/x/crypto/chacha20poly1305
 golang.org/x/crypto/curve25519
 golang.org/x/crypto/internal/subtle
 golang.org/x/crypto/poly1305
-# golang.org/x/net v0.0.0-20200904194848-62affa334b73
+# golang.org/x/net v0.0.0-20200927032502-5d4f70055728
 ## explicit
 golang.org/x/net/bpf
 golang.org/x/net/http/httpguts
@@ -85,7 +85,7 @@ golang.org/x/net/internal/timeseries
 golang.org/x/net/ipv4
 golang.org/x/net/ipv6
 golang.org/x/net/trace
-# golang.org/x/sys v0.0.0-20200922070232-aee5d888a860 => golang.org/x/sys v0.0.0-20200501145240-bc7a7d42d5c3
+# golang.org/x/sys v0.0.0-20200926100807-9d91bd62050c => golang.org/x/sys v0.0.0-20200501145240-bc7a7d42d5c3
 ## explicit
 golang.org/x/sys/cpu
 golang.org/x/sys/internal/unsafeheader
@@ -98,8 +98,9 @@ golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
-# golang.zx2c4.com/wireguard v0.0.20200320
+# golang.zx2c4.com/wireguard v0.0.20200321-0.20200607075020-f28a6d244b51
 ## explicit
+golang.zx2c4.com/wireguard/conn
 golang.zx2c4.com/wireguard/device
 golang.zx2c4.com/wireguard/ipc
 golang.zx2c4.com/wireguard/ipc/winpipe
@@ -124,6 +125,9 @@ golang.zx2c4.com/wireguard/wgctrl/internal/wgopenbsd
 golang.zx2c4.com/wireguard/wgctrl/internal/wgopenbsd/internal/wgh
 golang.zx2c4.com/wireguard/wgctrl/internal/wguser
 golang.zx2c4.com/wireguard/wgctrl/wgtypes
+# golang.zx2c4.com/wireguard/windows v0.1.1
+## explicit
+golang.zx2c4.com/wireguard/windows/tunnel/winipcfg
 # google.golang.org/genproto v0.0.0-20191009194640-548a555dbc03
 google.golang.org/genproto/googleapis/rpc/status
 # google.golang.org/grpc v1.31.1
@@ -218,4 +222,6 @@ k8s.io/utils/trace
 # k8s.io/sample-apiserver => github.com/kubernetes/sample-apiserver v0.18.8
 # k8s.io/utils => github.com/kubernetes/utils v0.0.0-20200821003339-5e75c0163111
 # vbom.ml/util => github.com/fvbommel/util v0.0.2
+# github.com/lxn/walk => golang.zx2c4.com/wireguard/windows v0.0.0-20200319192453-d35a18df246f
+# github.com/lxn/win => golang.zx2c4.com/wireguard/windows v0.0.0-20191128151145-b4e4933852d5
 # golang.org/x/sys => golang.org/x/sys v0.0.0-20200501145240-bc7a7d42d5c3

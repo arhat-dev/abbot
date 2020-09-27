@@ -31,11 +31,15 @@ replace (
 	vbom.ml/util => github.com/fvbommel/util v0.0.2
 )
 
-// Temporary fix for darwin syscall
-replace golang.org/x/sys => golang.org/x/sys v0.0.0-20200501145240-bc7a7d42d5c3
+replace (
+	github.com/lxn/walk => golang.zx2c4.com/wireguard/windows v0.0.0-20200319192453-d35a18df246f
+	github.com/lxn/win => golang.zx2c4.com/wireguard/windows v0.0.0-20191128151145-b4e4933852d5
+	// Temporary fix for darwin syscall
+	golang.org/x/sys => golang.org/x/sys v0.0.0-20200501145240-bc7a7d42d5c3
+)
 
 require (
-	arhat.dev/abbot-proto v0.0.0-20200908152444-df59421a64d2
+	arhat.dev/abbot-proto v0.0.0-20200923231045-0f9ee00debc7
 	arhat.dev/pkg v0.0.0-20200814094720-eac4d5d5680b
 	github.com/containernetworking/cni v0.7.1
 	github.com/spf13/cobra v1.0.0
@@ -44,11 +48,12 @@ require (
 	github.com/vishvananda/netns v0.0.0-20171111001504-be1fbeda1936
 	go.uber.org/multierr v1.5.0
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect
-	golang.org/x/net v0.0.0-20200904194848-62affa334b73 // indirect
-	golang.org/x/sys v0.0.0-20200922070232-aee5d888a860 // indirect
+	golang.org/x/net v0.0.0-20200927032502-5d4f70055728 // indirect
+	golang.org/x/sys v0.0.0-20200926100807-9d91bd62050c
 	golang.org/x/text v0.3.3 // indirect
-	golang.zx2c4.com/wireguard v0.0.20200320
+	golang.zx2c4.com/wireguard v0.0.20200321-0.20200607075020-f28a6d244b51
 	golang.zx2c4.com/wireguard/wgctrl v0.0.0-20200609130330-bd2cb7843e1b
+	golang.zx2c4.com/wireguard/windows v0.1.1
 	google.golang.org/grpc v1.31.1
 	gopkg.in/yaml.v2 v2.2.8
 	k8s.io/kubernetes v1.18.6
