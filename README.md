@@ -10,6 +10,11 @@ Network manager living at edge
 
 ## Features
 
+- [x] Host Network Management
+  - [x] tun based `wireguard` (linux, windows, macos, freebsd, openbsd)
+  - [x] `bridge` (linux)
+- [x] Container Network Management
+
 ## LICENSE
 
 ```text
