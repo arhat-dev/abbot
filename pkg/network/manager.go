@@ -3,15 +3,20 @@ package network
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"runtime"
 	"sync"
 	"text/template"
 	"time"
 
 	"arhat.dev/pkg/log"
+	"github.com/containernetworking/cni/libcni"
 	"go.uber.org/multierr"
 
 	"arhat.dev/abbot/pkg/conf"
+	"arhat.dev/abbot/pkg/constant"
 	"arhat.dev/abbot/pkg/driver"
 	"arhat.dev/abbot/pkg/types"
 )
@@ -25,7 +30,15 @@ type Manager struct {
 	hostMU            *sync.RWMutex
 
 	containerDev      string
+	cniDataDir        string
+	cniConfigFile     string
+	cniLookupPaths    []string
 	cniConfigTemplate *template.Template
+	cniMU             *sync.RWMutex
+
+	cniLoopbackConfig     *libcni.NetworkConfigList
+	cniNetworkConfigBytes []byte
+	cniNetworkConfig      *libcni.NetworkConfigList
 }
 
 func NewManager(
@@ -55,17 +68,65 @@ func NewManager(
 		return nil, fmt.Errorf("failed to parse cni config template: %w", err)
 	}
 
+	cndDataDir, err := filepath.Abs(containerNetwork.DataDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get absolute path of container network data dir: %w", err)
+	}
+
+	cniConfigFile := filepath.Join(cndDataDir, "config.json")
+
+	var (
+		cniNetworkConfig      *libcni.NetworkConfigList
+		cniNetworkConfigBytes []byte
+	)
+	f, err := os.Stat(cniConfigFile)
+	if err == nil {
+		if !f.Mode().IsRegular() {
+			err = os.RemoveAll(cniConfigFile)
+			if err != nil {
+				return nil, fmt.Errorf(
+					"failed to remove invalid cni network config file %s: %w", cniConfigFile, err,
+				)
+			}
+		} else {
+			cniNetworkConfigBytes, err = ioutil.ReadFile(cniConfigFile)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read cni network config file %s: %w", cniConfigFile, err)
+			}
+
+			cniNetworkConfig, err = libcni.ConfListFromBytes(cniNetworkConfigBytes)
+			if err != nil {
+				// ignore this error, just do not set in memory config
+				err = nil                   // nolint:ineffassign
+				cniNetworkConfigBytes = nil // nolint:ineffassign
+				cniNetworkConfig = nil      // nolint:ineffassign
+			}
+		}
+	}
+
+	loopbackConfig, err := libcni.ConfListFromBytes([]byte(constant.CNILoopbackNetworkConfig))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse required internal loopback config")
+	}
+
 	return &Manager{
 		ctx:    ctx,
 		logger: log.Log,
 
 		hostDeviceNameSeq: nameSeq,
 		hostDevices:       hostDevices,
+		hostMU:            new(sync.RWMutex),
 
 		containerDev:      containerNetwork.ContainerInterfaceName,
+		cniDataDir:        cndDataDir,
+		cniConfigFile:     cniConfigFile,
+		cniLookupPaths:    containerNetwork.CNIPluginsLookupPaths,
 		cniConfigTemplate: tmpl,
+		cniMU:             new(sync.RWMutex),
 
-		hostMU: new(sync.RWMutex),
+		cniLoopbackConfig:     loopbackConfig,
+		cniNetworkConfigBytes: cniNetworkConfigBytes,
+		cniNetworkConfig:      cniNetworkConfig,
 	}, nil
 }
 

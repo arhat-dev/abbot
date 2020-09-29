@@ -9,16 +9,14 @@ import (
 	"strings"
 	"sync"
 
-	"arhat.dev/abbot/pkg/wrap/netlink"
-
-	"arhat.dev/abbot/pkg/util"
-
 	"golang.zx2c4.com/wireguard/device"
 	"golang.zx2c4.com/wireguard/wgctrl"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 
 	"arhat.dev/abbot/pkg/driver"
 	"arhat.dev/abbot/pkg/types"
+	"arhat.dev/abbot/pkg/util"
+	"arhat.dev/abbot/pkg/wrap/netlink"
 )
 
 func init() {

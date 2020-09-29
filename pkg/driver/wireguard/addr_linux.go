@@ -3,9 +3,8 @@ package wireguard
 import (
 	"net"
 
-	"arhat.dev/abbot/pkg/wrap/netlink"
-
 	"arhat.dev/abbot/pkg/util"
+	"arhat.dev/abbot/pkg/wrap/netlink"
 )
 
 func (d *Driver) ensureUp(up bool) {

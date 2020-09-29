@@ -39,8 +39,9 @@ replace (
 )
 
 require (
-	arhat.dev/abbot-proto v0.0.0-20200923231045-0f9ee00debc7
+	arhat.dev/abbot-proto v0.0.0-20200929091836-58e1aaf44aba
 	arhat.dev/pkg v0.0.0-20200814094720-eac4d5d5680b
+	github.com/containernetworking/cni v0.8.0
 	github.com/spf13/cobra v1.0.0
 	github.com/stretchr/testify v1.6.1
 	github.com/vishvananda/netlink v1.0.0

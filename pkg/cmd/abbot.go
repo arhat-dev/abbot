@@ -19,9 +19,14 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/url"
+	"os"
 
+	"arhat.dev/abbot-proto/abbotgopb"
 	"arhat.dev/pkg/log"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
 
 	"arhat.dev/abbot/pkg/conf"
 	"arhat.dev/abbot/pkg/constant"
@@ -87,43 +92,56 @@ func NewAbbotCmd() *cobra.Command {
 }
 
 func run(ctx context.Context, config *conf.AbbotConfig) error {
-	//u, err := url.Parse(config.Abbot.Listen)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//addr := u.Host
-	//if u.Scheme == "unix" {
-	//	addr = u.Path
-	//	// clean up previous unix socket file
-	//	if err = os.Remove(addr); err != nil && !os.IsNotExist(err) {
-	//		return err
-	//	}
-	//}
-	//
-	//l, err := net.Listen(u.Scheme, addr)
-	//if err != nil {
-	//	return err
-	//}
+	u, err := url.Parse(config.Abbot.Listen)
+	if err != nil {
+		return err
+	}
+
+	addr := u.Host
+	if u.Scheme == "unix" {
+		addr = u.Path
+		// clean up previous unix socket file
+		if err = os.Remove(addr); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+	}
+
+	l, err := net.Listen(u.Scheme, addr)
+	if err != nil {
+		return err
+	}
 
 	mgr, err := network.NewManager(ctx, &config.HostNetwork, &config.ContainerNetwork)
 	if err != nil {
 		return err
 	}
 
-	err = mgr.Start()
-	if err != nil {
-		return fmt.Errorf("failed to start network manager: %w", err)
+	netMgrServer := grpc.NewServer()
+	abbotgopb.RegisterNetworkManagerServer(netMgrServer, mgr)
+
+	errCh := make(chan error)
+	go func() {
+		select {
+		case errCh <- netMgrServer.Serve(l):
+		case <-ctx.Done():
+		}
+	}()
+
+	go func() {
+		select {
+		case errCh <- mgr.Start():
+		case <-ctx.Done():
+		}
+	}()
+
+	select {
+	case err := <-errCh:
+		if err != nil {
+			return fmt.Errorf("failed to start network manager: %w", err)
+		}
+	case <-ctx.Done():
+		return nil
 	}
 
 	return nil
-	//netMgr, err := network.NewManager(ctx, &config.HostNetwork)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//netMgrServer := grpc.NewServer()
-	//abbotgopb.RegisterNetworkManagerServer(netMgrServer, netMgr)
-	//
-	//return netMgrServer.Serve(l)
 }

@@ -11,12 +11,14 @@ func NewRequest(req proto.Marshaler) (*Request, error) {
 	switch req.(type) {
 	case *ContainerNetworkEnsureRequest:
 		kind = REQ_ENSURE_CTR_NETWORK
+	case *ContainerNetworkRestoreRequest:
+		kind = REQ_RESTORE_CTR_NETWORK
 	case *ContainerNetworkQueryRequest:
 		kind = REQ_QUERY_CTR_NETWORK
 	case *ContainerNetworkDeleteRequest:
 		kind = REQ_DELETE_CTR_NETWORK
-	case *ContainerNetworkConfigUpdateRequest:
-		kind = REQ_UPDATE_CTR_NETWORK_CONFIG
+	case *ContainerNetworkConfigEnsureRequest:
+		kind = REQ_ENSURE_CTR_NETWORK_CONFIG
 	default:
 		return nil, fmt.Errorf("unkonw request type")
 	}
@@ -33,7 +35,10 @@ func NewRequest(req proto.Marshaler) (*Request, error) {
 }
 
 func NewContainerNetworkEnsureRequest(
-	containerID string, pid uint32, capArgs []*CNICapArgs, cniArgs map[string]string,
+	containerID string,
+	pid uint32,
+	capArgs []*CNICapArgs,
+	cniArgs map[string]string,
 ) *ContainerNetworkEnsureRequest {
 	return &ContainerNetworkEnsureRequest{
 		ContainerId: containerID,
@@ -43,19 +48,35 @@ func NewContainerNetworkEnsureRequest(
 	}
 }
 
-func NewContainerNetworkQueryRequest(pid uint32) *ContainerNetworkQueryRequest {
-	return &ContainerNetworkQueryRequest{Pid: pid}
+func NewContainerNetworkRestoreRequest(
+	containerID string, pid uint32,
+) *ContainerNetworkRestoreRequest {
+	return &ContainerNetworkRestoreRequest{
+		ContainerId: containerID,
+		Pid:         pid,
+	}
 }
 
-func NewContainerNetworkDeleteRequest(containerID string, pid uint32) *ContainerNetworkDeleteRequest {
+func NewContainerNetworkQueryRequest(containerID string, pid uint32) *ContainerNetworkQueryRequest {
+	return &ContainerNetworkQueryRequest{
+		ContainerId: containerID,
+		Pid:         pid,
+	}
+}
+
+func NewContainerNetworkDeleteRequest(
+	containerID string, pid uint32,
+) *ContainerNetworkDeleteRequest {
 	return &ContainerNetworkDeleteRequest{
 		ContainerId: containerID,
 		Pid:         pid,
 	}
 }
 
-func NewContainerNetworkConfigUpdateRequest(ipv4Subnet, ipv6Subnet string) *ContainerNetworkConfigUpdateRequest {
-	return &ContainerNetworkConfigUpdateRequest{
+func NewContainerNetworkConfigEnsureRequest(
+	ipv4Subnet, ipv6Subnet string,
+) *ContainerNetworkConfigEnsureRequest {
+	return &ContainerNetworkConfigEnsureRequest{
 		Ipv4Subnet: ipv4Subnet,
 		Ipv6Subnet: ipv6Subnet,
 	}
