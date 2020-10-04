@@ -44,14 +44,15 @@ spec:
             - /etc/abbot/config.yaml
           securityContext:
             privileged: true
-          livenessProbe:
-            httpGet:
-              path: /
-              port: http
-          readinessProbe:
-            httpGet:
-              path: /
-              port: http
+          # TODO: implement liveness probe
+          # livenessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+          # readinessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
           volumeMounts:
           - name: config
             mountPath: /etc/abbot
