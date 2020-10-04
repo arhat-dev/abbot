@@ -45,6 +45,7 @@ require (
 	github.com/spf13/cobra v1.0.0
 	github.com/stretchr/testify v1.6.1
 	github.com/vishvananda/netlink v1.0.0
+	github.com/vishvananda/netns v0.0.0-20171111001504-be1fbeda1936
 	go.uber.org/multierr v1.5.0
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect
 	golang.org/x/net v0.0.0-20200927032502-5d4f70055728 // indirect

@@ -30,7 +30,8 @@ import (
 
 	"arhat.dev/abbot/pkg/conf"
 	"arhat.dev/abbot/pkg/constant"
-	"arhat.dev/abbot/pkg/network"
+	"arhat.dev/abbot/pkg/container"
+	"arhat.dev/abbot/pkg/host"
 )
 
 func NewAbbotCmd() *cobra.Command {
@@ -111,13 +112,18 @@ func run(ctx context.Context, config *conf.AbbotConfig) error {
 		return err
 	}
 
-	mgr, err := network.NewManager(ctx, &config.HostNetwork, &config.ContainerNetwork)
+	hostMgr, err := host.NewManager(ctx, &config.HostNetwork)
+	if err != nil {
+		return err
+	}
+
+	containerMgr, err := container.NewManager(ctx, &config.ContainerNetwork)
 	if err != nil {
 		return err
 	}
 
 	netMgrServer := grpc.NewServer()
-	abbotgopb.RegisterNetworkManagerServer(netMgrServer, mgr)
+	abbotgopb.RegisterNetworkManagerServer(netMgrServer, containerMgr)
 
 	errCh := make(chan error)
 	go func() {
@@ -129,7 +135,7 @@ func run(ctx context.Context, config *conf.AbbotConfig) error {
 
 	go func() {
 		select {
-		case errCh <- mgr.Start():
+		case errCh <- hostMgr.Start():
 		case <-ctx.Done():
 		}
 	}()

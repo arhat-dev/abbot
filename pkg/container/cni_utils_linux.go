@@ -1,4 +1,4 @@
-package network
+package container
 
 import (
 	"context"
@@ -20,7 +20,7 @@ import (
 	"arhat.dev/abbot/pkg/util"
 )
 
-type ContainerNetworkConfigSnapshot struct {
+type ConfigSnapshot struct {
 	PID              uint32 `json:"pid" yaml:"pid"`
 	EnsureRequest    string `json:"ensureRequest" yaml:"ensureRequest"`
 	CNINetworkConfig string `json:"cniNetworkConfig" yaml:"cniNetworkConfig"`
@@ -28,13 +28,13 @@ type ContainerNetworkConfigSnapshot struct {
 
 func newContainerNetworkConfigSnapshot(
 	req *abbotgopb.ContainerNetworkEnsureRequest, cniNetworkConfig string,
-) (*ContainerNetworkConfigSnapshot, error) {
+) (*ConfigSnapshot, error) {
 	reqBytes, err := req.Marshal()
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal container network ensure request: %w", err)
 	}
 
-	return &ContainerNetworkConfigSnapshot{
+	return &ConfigSnapshot{
 		PID:              req.Pid,
 		EnsureRequest:    base64.StdEncoding.EncodeToString(reqBytes),
 		CNINetworkConfig: cniNetworkConfig,
@@ -121,7 +121,7 @@ func (m *Manager) getContainerNetworkConfigSnapshot(
 		return nil, nil, fmt.Errorf("failed to load old config %s for container network: %w", configFile, err)
 	}
 
-	existingConfig := new(ContainerNetworkConfigSnapshot)
+	existingConfig := new(ConfigSnapshot)
 	err = json.Unmarshal(configBytes, existingConfig)
 	if err != nil {
 		return nil, nil, fmt.Errorf("invalid old container network config %s: %w", configFile, err)

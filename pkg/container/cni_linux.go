@@ -1,4 +1,4 @@
-package network
+package container
 
 import (
 	"bytes"
@@ -16,7 +16,7 @@ import (
 	"go.uber.org/multierr"
 )
 
-type CNIConfigTemplateVariables struct {
+type ConfigTemplateVariables struct {
 	IPv4Subnet string
 	IPv6Subnet string
 }
@@ -33,7 +33,7 @@ func (m *Manager) handleContainerNetworkConfigEnsureReq(
 	}
 
 	buf := new(bytes.Buffer)
-	err = m.cniConfigTemplate.Execute(buf, &CNIConfigTemplateVariables{
+	err = m.cniConfigTemplate.Execute(buf, &ConfigTemplateVariables{
 		IPv4Subnet: req.Ipv4Subnet,
 		IPv6Subnet: req.Ipv6Subnet,
 	})
