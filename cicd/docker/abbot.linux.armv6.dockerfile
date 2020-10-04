@@ -16,8 +16,6 @@ FROM arhatdev/go:alpine-${ARCH}
 
 # add required packages
 RUN set -e ;\
-    apt update ;\
-    apt install -y iptables ;\
-    rm -rf /var/lib/apt/lists/*
+    apk --no-cache add iptables ip6tables ;
 
 ENTRYPOINT [ "/abbot" ]
