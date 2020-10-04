@@ -10,7 +10,7 @@ ARG ARCH=armv6
 # RUN set -e;\
 #     sh /download cni_plugins "${ARCH}" "${CNI_PLUGINS_VERSION}"
 
-FROM arhatdev/go:debian-${ARCH}
+FROM arhatdev/go:alpine-${ARCH}
 
 # COPY --from=builder /opt/cni/bin /opt/cni/bin
 
