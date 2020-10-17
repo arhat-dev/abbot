@@ -31,12 +31,16 @@ replace (
 	vbom.ml/util => github.com/fvbommel/util v0.0.2
 )
 
+// wireguard releated
 replace (
 	github.com/lxn/walk => golang.zx2c4.com/wireguard/windows v0.0.0-20200319192453-d35a18df246f
 	github.com/lxn/win => golang.zx2c4.com/wireguard/windows v0.0.0-20191128151145-b4e4933852d5
 	// Temporary fix for darwin syscall
 	golang.org/x/sys => golang.org/x/sys v0.0.0-20200501145240-bc7a7d42d5c3
 )
+
+// currently only this version of gvisor works
+replace gvisor.dev/gvisor => gvisor.dev/gvisor v0.0.0-20201001012933-c4f3063255be
 
 require (
 	arhat.dev/abbot-proto v0.0.0-20200929091836-58e1aaf44aba
@@ -56,4 +60,5 @@ require (
 	golang.zx2c4.com/wireguard/windows v0.1.1
 	google.golang.org/grpc v1.32.0
 	gopkg.in/yaml.v2 v2.3.0
+	gvisor.dev/gvisor v0.0.0-20201001012933-c4f3063255be
 )
