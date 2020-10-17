@@ -19,12 +19,16 @@ import (
 	"arhat.dev/abbot/pkg/wrap/netlink"
 )
 
+const (
+	DriverName = "wireguard"
+)
+
 func init() {
-	driver.Register("wireguard", "darwin", NewDriver, NewConfig)
-	driver.Register("wireguard", "freebsd", NewDriver, NewConfig)
-	driver.Register("wireguard", "openbsd", NewDriver, NewConfig)
-	driver.Register("wireguard", "windows", NewDriver, NewConfig)
-	driver.Register("wireguard", "linux", NewDriver, NewConfig)
+	driver.Register(DriverName, "darwin", NewDriver, NewConfig)
+	driver.Register(DriverName, "freebsd", NewDriver, NewConfig)
+	driver.Register(DriverName, "openbsd", NewDriver, NewConfig)
+	driver.Register(DriverName, "windows", NewDriver, NewConfig)
+	driver.Register(DriverName, "linux", NewDriver, NewConfig)
 }
 
 func NewDriver(ctx context.Context, name string, cfg interface{}) (types.Driver, error) {
