@@ -7,9 +7,18 @@ on:
     - rerequested
     - requested_action
   pull_request:
+    paths-ignore:
+    - docs/**
+    - cicd/deploy/charts/**
+    - README.md
     branches:
     - master
+    - "!deps/**"
   push:
+    paths-ignore:
+    - docs/**
+    - cicd/deploy/charts/**
+    - README.md
     branches:
     - master
     tags:
@@ -24,6 +33,7 @@ defaults:
 
 jobs:
   build-on-linux:
+    if: contains(github.head_ref, 'deps/') == false
     runs-on: ubuntu-latest
     steps:
     - uses: kolpav/purge-artifacts-action@v1
@@ -39,8 +49,6 @@ jobs:
     - name: Build
       run: |
         make -j$(nproc --all) abbot.linux.all
-        make -j$(nproc --all) abbot.darwin.all TAGS=''
-        make -j$(nproc --all) abbot.windows.all TAGS=''
         make -j$(nproc --all) abbot.freebsd.all TAGS=''
         make -j$(nproc --all) abbot.netbsd.all TAGS=''
         make -j$(nproc --all) abbot.openbsd.all TAGS=''
@@ -49,13 +57,13 @@ jobs:
         make -j$(nproc --all) abbot.aix.ppc64 TAGS=''
         make -j$(nproc --all) abbot.dragonfly.amd64 TAGS=''
 
-    - name: Package
-      run: |
-        make package.abbot.linux.all
+    # - name: Package
+    #   run: |
+    #     make package.abbot.linux.all
 
     - name: Hash
       run: |
-        os_list="linux darwin windows freebsd netbsd openbsd plan9 aix solaris dragonfly"
+        os_list="linux freebsd netbsd openbsd plan9 aix solaris dragonfly"
 
         cd build
         for os in ${os_list}; do
@@ -71,10 +79,84 @@ jobs:
         name: build-on-linux
         path: build
 
+  build-on-darwin:
+    if: contains(github.head_ref, 'deps/') == false
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-go@v2
+      with:
+        # TODO: update to 1.15.x once 1.15.4 released
+        go-version: 1.14.x
+
+    - name: Build
+      run: |
+        make -j$(nproc --all) abbot.darwin.all TAGS=''
+
+    # # TODO: Support macos packaging
+    # - name: Package
+    #   run: |
+    #     make package.abbot.darwin.all
+
+    - name: Install md5sum
+      run: |
+        brew install md5sha1sum
+
+    - name: Hash
+      run: |
+        cd build
+        shasum -a 256 abbot.darwin* > sha256.darwin.txt
+        shasum -a 512 abbot.darwin* > sha512.darwin.txt
+        md5sum abbot.darwin* > md5.darwin.txt
+        cd -
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: build-on-darwin
+        path: build
+
+  build-on-windows:
+    if: contains(github.head_ref, 'deps/') == false
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-go@v2
+      with:
+        # TODO: update to 1.15.x once 1.15.4 released
+        go-version: 1.14.x
+
+    - name: Build
+      run: |
+        make -j$(nproc --all) abbot.windows.all TAGS=''
+
+    # # TODO: Support windows packaging
+    # - name: Package
+    #   run: |
+    #     make package.abbot.windows.all
+
+    - name: Hash
+      run: |
+        cd build
+        sha256sum abbot.windows* > sha256.windows.txt
+        sha512sum abbot.windows* > sha512.windows.txt
+        md5sum abbot.windows* > md5.windows.txt
+        cd -
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: build-on-windows
+        path: build
+
   release:
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
     needs:
     - build-on-linux
+    - build-on-windows
+    - build-on-darwin
+    # - build-on-linux-cgo
+
     runs-on: ubuntu-latest
     steps:
     - name: Download linux builds
@@ -82,6 +164,24 @@ jobs:
       with:
         name: build-on-linux
         path: build
+
+    - name: Download windows builds
+      uses: actions/download-artifact@v2
+      with:
+        name: build-on-windows
+        path: build
+
+    - name: Download darwin builds
+      uses: actions/download-artifact@v2
+      with:
+        name: build-on-darwin
+        path: build
+
+    # - name: Download linux cgo builds
+    #   uses: actions/download-artifact@v2
+    #   with:
+    #     name: build-on-linux-cgo
+    #     path: build
 
     - name: Extract tag name
       id: extract_tag
@@ -98,6 +198,7 @@ jobs:
         release_name: ${{ github.ref }}
         draft: true
         prerelease: false
+        # yamllint disable rule:line-length
         body: |
           # Release Notes
 
@@ -120,6 +221,11 @@ jobs:
 
           - `docker.io/arhatdev/abbot:${{ steps.extract_tag.outputs.tag }}`
           - `ghcr.io/arhat-dev/abbot:${{ steps.extract_tag.outputs.tag }}`
+
+          ## Helm Charts
+
+          - Have a look at [ArtifactHub](https://artifacthub.io/packages/helm/arhatdev/abbot)
+          - Checkout chart [source code](https://github.com/arhat-dev/abbot/blob/${{ steps.extract_tag.outputs.tag }}/cicd/deploy/charts/abbot)
 
     #
     # checksums
@@ -660,79 +766,89 @@ jobs:
         asset_path: build/abbot.solaris.amd64
         asset_content_type: application/octet-stream
 
+    - name: Upload abbot.aix.ppc64
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_name: abbot.aix.ppc64
+        asset_path: build/abbot.aix.ppc64
+        asset_content_type: application/octet-stream
+
     #
     # packages
     #
 
-    - name: Upload abbot-amd64.deb
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_name: abbot.amd64.deb
-        asset_path: build/abbot.amd64.deb
-        asset_content_type: application/vnd.debian.binary-package
+    # - name: Upload abbot-amd64.deb
+    #   uses: actions/upload-release-asset@v1
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   with:
+    #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+    #     asset_name: abbot.amd64.deb
+    #     asset_path: build/abbot.amd64.deb
+    #     asset_content_type: application/vnd.debian.binary-package
 
-    - name: Upload abbot-x86_64.rpm
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_name: abbot.x86_64.rpm
-        asset_path: build/abbot.x86_64.rpm
-        asset_content_type: application/x-rpm
+    # - name: Upload abbot-x86_64.rpm
+    #   uses: actions/upload-release-asset@v1
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   with:
+    #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+    #     asset_name: abbot.x86_64.rpm
+    #     asset_path: build/abbot.x86_64.rpm
+    #     asset_content_type: application/x-rpm
 
-    - name: Upload abbot-armel.deb
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_name: abbot.armel.deb
-        asset_path: build/abbot.armel.deb
-        asset_content_type: application/vnd.debian.binary-package
+    # - name: Upload abbot-armel.deb
+    #   uses: actions/upload-release-asset@v1
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   with:
+    #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+    #     asset_name: abbot.armel.deb
+    #     asset_path: build/abbot.armel.deb
+    #     asset_content_type: application/vnd.debian.binary-package
 
-    - name: Upload abbot-armhf.deb
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_name: abbot.armhf.deb
-        asset_path: build/abbot.armhf.deb
-        asset_content_type: application/vnd.debian.binary-package
+    # - name: Upload abbot-armhf.deb
+    #   uses: actions/upload-release-asset@v1
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   with:
+    #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+    #     asset_name: abbot.armhf.deb
+    #     asset_path: build/abbot.armhf.deb
+    #     asset_content_type: application/vnd.debian.binary-package
 
-    - name: Upload abbot-armhfp.rpm
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_name: abbot.armhfp.rpm
-        asset_path: build/abbot.armhfp.rpm
-        asset_content_type: application/x-rpm
+    # - name: Upload abbot-armhfp.rpm
+    #   uses: actions/upload-release-asset@v1
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   with:
+    #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+    #     asset_name: abbot.armhfp.rpm
+    #     asset_path: build/abbot.armhfp.rpm
+    #     asset_content_type: application/x-rpm
 
-    - name: Upload abbot-arm64.deb
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_name: abbot.arm64.deb
-        asset_path: build/abbot.arm64.deb
-        asset_content_type: application/vnd.debian.binary-package
+    # - name: Upload abbot-arm64.deb
+    #   uses: actions/upload-release-asset@v1
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   with:
+    #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+    #     asset_name: abbot.arm64.deb
+    #     asset_path: build/abbot.arm64.deb
+    #     asset_content_type: application/vnd.debian.binary-package
 
-    - name: Upload abbot-aarch64.rpm
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_name: abbot.aarch64.rpm
-        asset_path: build/abbot.aarch64.rpm
-        asset_content_type: application/x-rpm
+    # - name: Upload abbot-aarch64.rpm
+    #   uses: actions/upload-release-asset@v1
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   with:
+    #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+    #     asset_name: abbot.aarch64.rpm
+    #     asset_path: build/abbot.aarch64.rpm
+    #     asset_content_type: application/x-rpm
 
     # - name: Upload abbot-arm64.msi
     #   uses: actions/upload-release-asset@v1

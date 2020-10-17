@@ -1,6 +1,22 @@
 apiVersion: v2
 name: abbot
-description: Edge Network Controller
+description: Network Manager Living at Edge
 type: application
+maintainers:
+- name: arhat-dev
+  email: dev@arhat.dev
+keywords:
+- abbot
+- arhat
+- aranya
+- network
+- userspaces
+- wireguard
+- cni
+# icon:
+home: https://github.com/arhat-dev/abbot
+sources:
+- https://github.com/arhat-dev/abbot
+- https://github.com/arhat-dev/helm-charts
 version: 0.1.0
 appVersion: latest
