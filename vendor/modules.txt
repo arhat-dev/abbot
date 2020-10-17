@@ -1,7 +1,7 @@
 # arhat.dev/abbot-proto v0.0.0-20200929091836-58e1aaf44aba
 ## explicit
 arhat.dev/abbot-proto/abbotgopb
-# arhat.dev/pkg v0.0.0-20200814094720-eac4d5d5680b
+# arhat.dev/pkg v0.0.0-20201011023427-3d85bac95f31
 ## explicit
 arhat.dev/pkg/envhelper
 arhat.dev/pkg/log
@@ -36,7 +36,7 @@ github.com/mdlayher/netlink
 github.com/mdlayher/netlink/nlenc
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
-# github.com/spf13/cobra v1.0.0
+# github.com/spf13/cobra v1.1.0
 ## explicit
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
@@ -44,16 +44,16 @@ github.com/spf13/pflag
 # github.com/stretchr/testify v1.6.1
 ## explicit
 github.com/stretchr/testify/assert
-# github.com/vishvananda/netlink v1.0.0
+# github.com/vishvananda/netlink v1.1.0
 ## explicit
 github.com/vishvananda/netlink
 github.com/vishvananda/netlink/nl
-# github.com/vishvananda/netns v0.0.0-20171111001504-be1fbeda1936
+# github.com/vishvananda/netns v0.0.0-20200728191858-db3c7e526aae
 ## explicit
 github.com/vishvananda/netns
-# go.uber.org/atomic v1.6.0
+# go.uber.org/atomic v1.7.0
 go.uber.org/atomic
-# go.uber.org/multierr v1.5.0
+# go.uber.org/multierr v1.6.0
 ## explicit
 go.uber.org/multierr
 # go.uber.org/zap v1.15.0
@@ -84,7 +84,7 @@ golang.org/x/net/internal/timeseries
 golang.org/x/net/ipv4
 golang.org/x/net/ipv6
 golang.org/x/net/trace
-# golang.org/x/sys v0.0.0-20200926100807-9d91bd62050c => golang.org/x/sys v0.0.0-20200501145240-bc7a7d42d5c3
+# golang.org/x/sys v0.0.0-20201017003518-b09fb700fbb7 => golang.org/x/sys v0.0.0-20200501145240-bc7a7d42d5c3
 ## explicit
 golang.org/x/sys/cpu
 golang.org/x/sys/internal/unsafeheader
@@ -127,9 +127,9 @@ golang.zx2c4.com/wireguard/wgctrl/wgtypes
 # golang.zx2c4.com/wireguard/windows v0.1.1
 ## explicit
 golang.zx2c4.com/wireguard/windows/tunnel/winipcfg
-# google.golang.org/genproto v0.0.0-20191009194640-548a555dbc03
+# google.golang.org/genproto v0.0.0-20191108220845-16a3f7862a1a
 google.golang.org/genproto/googleapis/rpc/status
-# google.golang.org/grpc v1.31.1
+# google.golang.org/grpc v1.32.0
 ## explicit
 google.golang.org/grpc
 google.golang.org/grpc/attributes
@@ -142,7 +142,6 @@ google.golang.org/grpc/binarylog/grpc_binarylog_v1
 google.golang.org/grpc/codes
 google.golang.org/grpc/connectivity
 google.golang.org/grpc/credentials
-google.golang.org/grpc/credentials/internal
 google.golang.org/grpc/encoding
 google.golang.org/grpc/encoding/proto
 google.golang.org/grpc/grpclog
@@ -172,7 +171,7 @@ google.golang.org/grpc/serviceconfig
 google.golang.org/grpc/stats
 google.golang.org/grpc/status
 google.golang.org/grpc/tap
-# gopkg.in/yaml.v2 v2.2.8
+# gopkg.in/yaml.v2 v2.3.0
 ## explicit
 gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.0-20200605160147-a5ece683394c

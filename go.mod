@@ -40,20 +40,20 @@ replace (
 
 require (
 	arhat.dev/abbot-proto v0.0.0-20200929091836-58e1aaf44aba
-	arhat.dev/pkg v0.0.0-20200814094720-eac4d5d5680b
+	arhat.dev/pkg v0.0.0-20201011023427-3d85bac95f31
 	github.com/containernetworking/cni v0.8.0
-	github.com/spf13/cobra v1.0.0
+	github.com/spf13/cobra v1.1.0
 	github.com/stretchr/testify v1.6.1
-	github.com/vishvananda/netlink v1.0.0
-	github.com/vishvananda/netns v0.0.0-20171111001504-be1fbeda1936
-	go.uber.org/multierr v1.5.0
+	github.com/vishvananda/netlink v1.1.0
+	github.com/vishvananda/netns v0.0.0-20200728191858-db3c7e526aae
+	go.uber.org/multierr v1.6.0
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect
 	golang.org/x/net v0.0.0-20200927032502-5d4f70055728 // indirect
-	golang.org/x/sys v0.0.0-20200926100807-9d91bd62050c
+	golang.org/x/sys v0.0.0-20201017003518-b09fb700fbb7
 	golang.org/x/text v0.3.3 // indirect
 	golang.zx2c4.com/wireguard v0.0.20200321-0.20200607075020-f28a6d244b51
 	golang.zx2c4.com/wireguard/wgctrl v0.0.0-20200609130330-bd2cb7843e1b
 	golang.zx2c4.com/wireguard/windows v0.1.1
-	google.golang.org/grpc v1.31.1
-	gopkg.in/yaml.v2 v2.2.8
+	google.golang.org/grpc v1.32.0
+	gopkg.in/yaml.v2 v2.3.0
 )
