@@ -11,8 +11,10 @@ Network manager living at edge
 ## Features
 
 - [x] Host Network Management
-  - [x] tun based `wireguard` (linux, windows, macos, freebsd, openbsd)
-  - [x] `bridge` (linux)
+  - Drivers
+    - [x] tun based `wireguard` (linux, windows, macos, freebsd, openbsd)
+    - [x] `bridge` (linux)
+    - [ ] [`usernet`](./docs/Driver-usernet.md) (linux, aix, windows, macos, freebsd, openbsd, dragonfly, solaris, netbsd)
 - [x] Container Network Management
 
 ## LICENSE
