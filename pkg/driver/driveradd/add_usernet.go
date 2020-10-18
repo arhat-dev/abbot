@@ -1,5 +1,5 @@
 // +build !nousernet
-// +build !plan9
+// +build !plan9,!386,!arm,!mips,!mipsle
 
 package driveradd
 
