@@ -34,7 +34,7 @@ func init() {
 func NewDriver(ctx context.Context, name string, cfg interface{}) (types.Driver, error) {
 	config, ok := cfg.(*Config)
 	if !ok {
-		return nil, fmt.Errorf("invalid non tun driver config")
+		return nil, fmt.Errorf("invalid non wireguard driver config")
 	}
 
 	ips, err := util.ParseIPs(config.Addresses)
