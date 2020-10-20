@@ -1,7 +1,3 @@
-# Default values for abbot.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
-
 image:
   repository: docker.io/arhatdev/abbot
   pullPolicy: Always
@@ -22,8 +18,15 @@ resources: {}
   #   cpu: 100m
   #   memory: 128Mi
 
-nodeSelector: {}
-tolerations: []
+nodeSelector:
+  arhat.dev/namespace: default
+
+tolerations:
+- key: arhat.dev/namespace
+  value: default
+- key: node.kubernetes.io/unschedulable
+  operator: Exists
+
 affinity: {}
 
 config:
@@ -39,77 +42,78 @@ config:
     # abbot listen address, scheme can be one of [tcp, unix]
     # then listener is designed to be host local, and should
     # not be exposed to the network (dangerous)
+    #
+    # if not set, will not accept any request thus only host network
+    # configured below will be ensured when running
     listen: unix:///var/run/abbot.sock
 
   hostNetwork:
-    interfaces:
-    - name: abbot0
-      driver: bridge
-      config:
-        addresses:
-        - 10.0.0.1/24
-        alias: ""
-        promisc: false
-        mtu: 1440
-        txQueueLen: 1000
-        hardwareAddr: ""
-        # hairpin: true
-        # guard: false
-        # fastLeave: false
-        # rootBlock: false
-        # learning: false
-        # flood: false
-        # proxyArp: false
-        # proxyArpWifi: false
-    - name: utun5
-      driver: wireguard
-      config:
-        addresses:
-        - 10.100.0.1/32
-        # device mtu
-        mtu: 1400
-        # log output to stderr
-        logLevel: debug
-        # (optional) private key (base64 encoded)
-        privateKey: mGmgXNWBjx2sQy2kRYcnpkHTAi9j7cCrQZzGKlK96ko=
-        # local udp port
-        listenPort: 65510
-        routing:
-          enabled: true
-          # routing table
-          table: 0
-          # firewall mark
-          firewallMark: 0
-        # wireguard peers
-        peers:
-          # public key is required (base64 encoded)
-        - publicKey: xkmpiToCbDDAHgWnJl1GgnvIaCvwcS617UK1tVMpE3U=
-          preSharedKey: ""
-          # udp endpoint address
-          endpoint: localhost:1400
-          persistentKeepaliveInterval: 10s
-          # ip addresses in this vpn
-          allowedIPs:
-          - 10.100.0.2/32
-    proxies:
-    - address: "10.0.0.1" # yamllint disable-line rule:quoted-strings
-      # protocols to be proxied, will proxy all if not set
-      protocols:
-      - tcp
-      - udp
-      - icmp
-      ipRanges:
-      - 172.16.0.0/16
-      - 192.168.100.0/24
-      tproxy:
-        mark: 0x01/0x01
-        tcp: false
-        udp: true
-        routing:
-          # routing rule priority for tproxy fwmark routing
-          rulePriority:
-          # routing table for tproxy fwmark lookup, 1 - 255
-          table: 200
+    interfaces: []
+    # - name: abbot0
+    #   driver: bridge
+    #   mtu: 1440
+    #   hardware_address: ""
+    #   addresses:
+    #   - 10.0.0.1/24
+    #   alias: ""
+    #   promisc: false
+    #   tx_queue_len: 1000
+    #   # hairpin: true
+    #   # guard: false
+    #   # fastLeave: false
+    #   # rootBlock: false
+    #   # learning: false
+    #   # flood: false
+    #   # proxyArp: false
+    #   # proxyArpWifi: false
+    # - name: utun5
+    #   driver: wireguard
+    #   addresses:
+    #   - 10.100.0.1/32
+    #   # device mtu
+    #   mtu: 1400
+    #   # log output to stderr
+    #   log_level: debug
+    #   # (optional) private key (base64 encoded)
+    #   private_key: mGmgXNWBjx2sQy2kRYcnpkHTAi9j7cCrQZzGKlK96ko=
+    #   # local udp port
+    #   listen_port: 65510
+    #   routing:
+    #     enabled: true
+    #     # routing table
+    #     table: 0
+    #     # firewall mark
+    #     firewall_mark: 0
+    #     # wireguard peers
+    #   peers:
+    #     # public key is required (base64 encoded)
+    #   - public_key: xkmpiToCbDDAHgWnJl1GgnvIaCvwcS617UK1tVMpE3U=
+    #     pre_shared_key: ""
+    #     # udp endpoint address
+    #     endpoint: localhost:1400
+    #     persistent_keepalive_interval: 10
+    #     # ip addresses in this vpn
+    #     allowed_ips:
+    #     - 10.100.0.2/32
+    proxies: []
+    # - address: "10.0.0.1" # yamllint disable-line rule:quoted-strings
+    #   # protocols to be proxied, will proxy all if not set
+    #   protocols:
+    #   - tcp
+    #   - udp
+    #   - icmp
+    #   ipRanges:
+    #   - 172.16.0.0/16
+    #   - 192.168.100.0/24
+    #   tproxy:
+    #     mark: 0x01/0x01
+    #     tcp: false
+    #     udp: true
+    #     routing:
+    #       # routing rule priority for tproxy fwmark routing
+    #       rulePriority:
+    #       # routing table for tproxy fwmark lookup, 1 - 255
+    #       table: 200
 
   containerNetwork:
     dataDir: /var/lib/abbot/container

@@ -1,10 +1,9 @@
 ---
-# Source: abbot/templates/configmap.yaml
+# Source: abbot/templates/secret.yaml
 apiVersion: v1
-kind: ConfigMap
+kind: Secret
 metadata:
   name: abbot
-  namespace: default
   labels:
     helm.sh/chart: abbot-0.1.0
     app.kubernetes.io/name: abbot
@@ -12,109 +11,15 @@ metadata:
     arhat.dev/role: Abbot
     app.kubernetes.io/version: "latest"
     app.kubernetes.io/managed-by: Helm
+type: Opaque
 data:
-  config.yaml: |
-    abbot:
-      listen: unix:///var/run/abbot.sock
-      log:
-      - file: stderr
-        format: console
-        level: verbose
-    containerNetwork:
-      cniPluginsLookupPaths:
-      - /opt/cni/bin
-      containerInterfaceName: eth0
-      dataDir: /var/lib/abbot/container
-      template: |
-        {
-          "cniVersion": "0.3.1",
-          "name": "abbot",
-          "plugins": [
-            {
-              "type": "bridge",
-              "bridge": "abbot0",
-              "isGateway": true,
-              "isDefaultGateway": true,
-              "ipMasq": true,
-              "forceAddress": true,
-              "ipam": {
-                "type": "host-local",
-                "ranges": [{{ if gt (len .IPv4Subnet) 0 }}
-                  [{
-                    "subnet": "{{ .IPv4Subnet }}",
-                    "routes": [{ "dst": "0.0.0.0/0" }]
-                  }]{{ end }}{{ if and (gt (len .IPv6Subnet) 0) (gt (len .IPv4Subnet) 0) }},{{ end }}{{ if gt (len .IPv6Subnet) 0 }}
-                  [{
-                    "subnet": "{{ .IPv6Subnet }}"
-                  }]{{ end }}
-                ]
-              }
-            },
-            {
-              "type": "portmap",
-              "capabilities": { "portMappings": true }
-            },
-            {
-              "type": "bandwidth",
-              "capabilities": { "bandwidth": true }
-            }
-          ]
-        }
-    hostNetwork:
-      interfaces:
-      - config:
-          addresses:
-          - 10.0.0.1/24
-          alias: ""
-          hardwareAddr: ""
-          mtu: 1440
-          promisc: false
-          txQueueLen: 1000
-        driver: bridge
-        name: abbot0
-      - config:
-          addresses:
-          - 10.100.0.1/32
-          listenPort: 65510
-          logLevel: debug
-          mtu: 1400
-          peers:
-          - allowedIPs:
-            - 10.100.0.2/32
-            endpoint: localhost:1400
-            persistentKeepaliveInterval: 10s
-            preSharedKey: ""
-            publicKey: xkmpiToCbDDAHgWnJl1GgnvIaCvwcS617UK1tVMpE3U=
-          privateKey: mGmgXNWBjx2sQy2kRYcnpkHTAi9j7cCrQZzGKlK96ko=
-          routing:
-            enabled: true
-            firewallMark: 0
-            table: 0
-        driver: wireguard
-        name: utun5
-      proxies:
-      - address: 10.0.0.1
-        ipRanges:
-        - 172.16.0.0/16
-        - 192.168.100.0/24
-        protocols:
-        - tcp
-        - udp
-        - icmp
-        tproxy:
-          mark: 0x01/0x01
-          routing:
-            rulePriority: null
-            table: 200
-          tcp: false
-          udp: true
+  config.yaml: YWJib3Q6CiAgbGlzdGVuOiB1bml4Oi8vL3Zhci9ydW4vYWJib3Quc29jawogIGxvZzoKICAtIGZpbGU6IHN0ZGVycgogICAgZm9ybWF0OiBjb25zb2xlCiAgICBsZXZlbDogdmVyYm9zZQpjb250YWluZXJOZXR3b3JrOgogIGNuaVBsdWdpbnNMb29rdXBQYXRoczoKICAtIC9vcHQvY25pL2JpbgogIGNvbnRhaW5lckludGVyZmFjZU5hbWU6IGV0aDAKICBkYXRhRGlyOiAvdmFyL2xpYi9hYmJvdC9jb250YWluZXIKICB0ZW1wbGF0ZTogfAogICAgewogICAgICAiY25pVmVyc2lvbiI6ICIwLjMuMSIsCiAgICAgICJuYW1lIjogImFiYm90IiwKICAgICAgInBsdWdpbnMiOiBbCiAgICAgICAgewogICAgICAgICAgInR5cGUiOiAiYnJpZGdlIiwKICAgICAgICAgICJicmlkZ2UiOiAiYWJib3QwIiwKICAgICAgICAgICJpc0dhdGV3YXkiOiB0cnVlLAogICAgICAgICAgImlzRGVmYXVsdEdhdGV3YXkiOiB0cnVlLAogICAgICAgICAgImlwTWFzcSI6IHRydWUsCiAgICAgICAgICAiZm9yY2VBZGRyZXNzIjogdHJ1ZSwKICAgICAgICAgICJpcGFtIjogewogICAgICAgICAgICAidHlwZSI6ICJob3N0LWxvY2FsIiwKICAgICAgICAgICAgInJhbmdlcyI6IFt7eyBpZiBndCAobGVuIC5JUHY0U3VibmV0KSAwIH19CiAgICAgICAgICAgICAgW3sKICAgICAgICAgICAgICAgICJzdWJuZXQiOiAie3sgLklQdjRTdWJuZXQgfX0iLAogICAgICAgICAgICAgICAgInJvdXRlcyI6IFt7ICJkc3QiOiAiMC4wLjAuMC8wIiB9XQogICAgICAgICAgICAgIH1de3sgZW5kIH19e3sgaWYgYW5kIChndCAobGVuIC5JUHY2U3VibmV0KSAwKSAoZ3QgKGxlbiAuSVB2NFN1Ym5ldCkgMCkgfX0se3sgZW5kIH19e3sgaWYgZ3QgKGxlbiAuSVB2NlN1Ym5ldCkgMCB9fQogICAgICAgICAgICAgIFt7CiAgICAgICAgICAgICAgICAic3VibmV0IjogInt7IC5JUHY2U3VibmV0IH19IgogICAgICAgICAgICAgIH1de3sgZW5kIH19CiAgICAgICAgICAgIF0KICAgICAgICAgIH0KICAgICAgICB9LAogICAgICAgIHsKICAgICAgICAgICJ0eXBlIjogInBvcnRtYXAiLAogICAgICAgICAgImNhcGFiaWxpdGllcyI6IHsgInBvcnRNYXBwaW5ncyI6IHRydWUgfQogICAgICAgIH0sCiAgICAgICAgewogICAgICAgICAgInR5cGUiOiAiYmFuZHdpZHRoIiwKICAgICAgICAgICJjYXBhYmlsaXRpZXMiOiB7ICJiYW5kd2lkdGgiOiB0cnVlIH0KICAgICAgICB9CiAgICAgIF0KICAgIH0KaG9zdE5ldHdvcms6CiAgaW50ZXJmYWNlczogW10KICBwcm94aWVzOiBbXQ==
 ---
 # Source: abbot/templates/daemonset.yaml
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: abbot
-  namespace: default
   labels:
     helm.sh/chart: abbot-0.1.0
     app.kubernetes.io/name: abbot
@@ -137,7 +42,6 @@ spec:
     spec:
       securityContext:
         {}
-      # only select nodes in this namespace
       nodeSelector:
         arhat.dev/namespace: default
       tolerations:
@@ -179,5 +83,5 @@ spec:
           path: /run/xtables.lock
           type: FileOrCreate
       - name: config
-        configMap:
-          name: abbot
+        secret:
+          secretName: abbot

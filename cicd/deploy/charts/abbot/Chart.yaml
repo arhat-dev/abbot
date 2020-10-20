@@ -13,6 +13,7 @@ keywords:
 - userspaces
 - wireguard
 - cni
+- mesh
 # icon:
 home: https://github.com/arhat-dev/abbot
 sources:

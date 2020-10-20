@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: {{ include "abbot.fullname" . }}
-  namespace: {{ .Release.Namespace }}
   labels:
     {{- include "abbot.labels" . | nindent 4 }}
 spec:
@@ -24,14 +23,14 @@ spec:
       {{- end }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
-      # only select nodes in this namespace
+      {{- with .Values.nodeSelector }}
       nodeSelector:
-        arhat.dev/namespace: {{ .Release.Namespace }}
+        {{- . | toYaml | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
       tolerations:
-        - key: arhat.dev/namespace
-          value: {{ .Release.Namespace }}
-        - key: node.kubernetes.io/unschedulable
-          operator: Exists
+        {{- . | toYaml | nindent 8 }}
+      {{- end }}
       hostPID: true
       hostNetwork: true
       containers:
@@ -66,5 +65,5 @@ spec:
           path: /run/xtables.lock
           type: FileOrCreate
       - name: config
-        configMap:
-          name: {{ include "abbot.fullname" . }}
+        secret:
+          secretName: {{ include "abbot.fullname" . }}
