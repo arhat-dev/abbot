@@ -24,11 +24,7 @@ Network manager living at edge
 
 ## Development
 
-### Implement custom drivers
-
-1. Add your driver config in [`abbot-proto/src/driver_<driver_name>.proto`](https://github.com/arhat-dev/abbot-proto/blob/master/src) and generate files.
-2. Implement your driver, register your driver config and driver factory func in a new package [pkg/driver/<driver_name>](./pkg/driver)
-3. Add your driver in [pkg/driver/driveradd/add_<driver_name>.go](./pkg/driver/driveradd) by importing the package and restricting build tags
+see [docs/Development.md](./docs/Development.md)
 
 ## LICENSE
 
