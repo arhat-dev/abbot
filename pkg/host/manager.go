@@ -36,7 +36,7 @@ func NewManager(
 			return nil, fmt.Errorf("invalid duplicate interface name %s", n.Name)
 		}
 
-		d, err := driver.NewDriver(ctx, n.Driver, runtime.GOOS, n.Name, n.Config)
+		d, err := driver.NewDriver(ctx, n.Driver, runtime.GOOS, n.DriverConfig)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create driver %s for %s: %w", n.Driver, n.Name, err)
 		}

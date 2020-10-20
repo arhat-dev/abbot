@@ -1,4 +1,5 @@
 // +build !nobridge
+// +build linux
 
 package driveradd
 

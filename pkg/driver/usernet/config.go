@@ -5,6 +5,10 @@ import (
 	"crypto/rand"
 	"fmt"
 	"hash/crc32"
+	"strings"
+	"time"
+
+	"arhat.dev/abbot-proto/abbotgopb"
 
 	"gvisor.dev/gvisor/pkg/tcpip"
 	"gvisor.dev/gvisor/pkg/tcpip/header"
@@ -21,69 +25,120 @@ import (
 )
 
 func NewConfig() interface{} {
-	return &Config{}
+	return &Config{
+		NetworkInterface: abbotgopb.NetworkInterface{
+			Name:            "",
+			Mtu:             65535,
+			HardwareAddress: "",
+			Addresses:       nil,
+		},
+		Overlay: OverlayConfig{
+			MQTT: nil,
+		},
+		ProtocolStack: StackConfig{
+			ChannelSize: 256,
+			Networks: StackNetworks{
+				ARP: StackARPConfig{
+					Enabled: false,
+				},
+				IPv4: StackIPv4Config{
+					Enabled: true,
+				},
+				IPv6: StackIPv6Config{
+					Enabled: false,
+				},
+			},
+			Protocols: StackProtocols{
+				Raw: StackRawConfig{
+					Enabled: false,
+				},
+				ICMP: StackICMPConfig{
+					Enabled: false,
+				},
+				TCP: StackTCPConfig{
+					Enabled: true,
+					SAck:    true,
+					NoDelay: true,
+					Buffer: SendRecvBufferConfig{
+						Send: BufferConfig{
+							Min:     4096,
+							Max:     2 * 1024 * 1024,
+							Default: 2 * 1024 * 1024,
+						},
+						Recv: BufferConfig{
+							Min:     4096,
+							Max:     2 * 1024 * 1024,
+							Default: 2 * 1024 * 1024,
+						},
+					},
+				},
+				UDP: StackUDPConfig{
+					Enabled: false,
+				},
+			},
+		},
+	}
 }
 
 type Config struct {
-	ProtocolStack StackConfig `json:"protocolStack" yaml:"protocolStack"`
+	abbotgopb.NetworkInterface `json:",inline" yaml:",inline"`
+	Overlay                    OverlayConfig `json:"overlay" yaml:"overlay"`
+	ProtocolStack              StackConfig   `json:"protocolStack" yaml:"protocolStack"`
 }
 
 type OverlayConfig struct {
+	MQTT *MQTTOverlayConfig `json:"mqtt" yaml:"mqtt"`
 }
 
 type StackConfig struct {
-	Addresses       []string `json:"addresses" yaml:"addresses"`
-	HardwareAddress string   `json:"hardwareAddress" yaml:"hardwareAddress"`
-
-	MTU         int `json:"mtu" yaml:"mtu"`
 	ChannelSize int `json:"channelSize" yaml:"channelSize"`
 
 	Networks  StackNetworks  `json:"networks" yaml:"networks"`
 	Protocols StackProtocols `json:"protocols" yaml:"protocols"`
 }
 
-func (s StackConfig) resolveNetworks() []stack.NetworkProtocolFactory {
+func (s Config) resolveNetworks() []stack.NetworkProtocolFactory {
 	var ret []stack.NetworkProtocolFactory
-	if s.Networks.ARP.Enabled {
+	if s.ProtocolStack.Networks.ARP.Enabled {
 		ret = append(ret, arp.NewProtocol)
 	}
-	if s.Networks.IPv4.Enabled {
+	if s.ProtocolStack.Networks.IPv4.Enabled {
 		ret = append(ret, ipv4.NewProtocol)
 	}
 
-	if s.Networks.IPv6.Enabled {
+	if s.ProtocolStack.Networks.IPv6.Enabled {
 		ret = append(ret, ipv6.NewProtocol)
 	}
 
 	return ret
 }
 
-func (s StackConfig) configureNetworks(
-	ctx context.Context, name string, netStack *stack.Stack,
-) (*channel.Endpoint, error) {
-	err := s.Networks.ARP.configure(netStack)
+func (s Config) configureNetworks(
+	ctx context.Context, netStack *stack.Stack,
+) (tcpip.NICID, *channel.Endpoint, error) {
+	err := s.ProtocolStack.Networks.ARP.configure(netStack)
 	if err != nil {
-		return nil, err
+		return 0, nil, fmt.Errorf("failed to configure arp network: %w", err)
 	}
 
-	err = s.Networks.IPv4.configure(netStack)
+	err = s.ProtocolStack.Networks.IPv4.configure(netStack)
 	if err != nil {
-		return nil, err
+		return 0, nil, fmt.Errorf("failed to configure ipv4 network: %w", err)
 	}
 
-	err = s.Networks.IPv6.configure(netStack)
+	err = s.ProtocolStack.Networks.IPv6.configure(netStack)
 	if err != nil {
-		return nil, err
+		return 0, nil, fmt.Errorf("failed to configure ipv6 network: %w", err)
 	}
 
-	nicID := tcpip.NICID(crc32.ChecksumIEEE([]byte(name)))
+	nicID := tcpip.NICID(crc32.ChecksumIEEE([]byte(s.Name)))
 
 	var hwAddr tcpip.LinkAddress
 	if s.HardwareAddress == "" {
 		buf := make([]byte, 6)
 		_, err = rand.Read(buf)
 		if err != nil {
-			return nil, fmt.Errorf("failed to generate random hardware address: %w", err)
+			return 0, nil, fmt.Errorf("failed to generate random hardware address: %w", err)
 		}
 
 		// set local bit and ensure unicast address
@@ -93,33 +148,33 @@ func (s StackConfig) configureNetworks(
 		var err2 error
 		hwAddr, err2 = tcpip.ParseMACAddress(s.HardwareAddress)
 		if err2 != nil {
-			return nil, fmt.Errorf("failed to parse hardware address: %w", err2)
+			return 0, nil, fmt.Errorf("failed to parse hardware address: %w", err2)
 		}
 	}
 
-	mtu := uint32(s.MTU)
+	mtu := uint32(s.Mtu)
 	if mtu == 0 {
 		mtu = 65536
 	}
 
-	chSize := s.ChannelSize
+	chSize := s.ProtocolStack.ChannelSize
 	if chSize == 0 {
 		chSize = 256
 	}
 
-	ch := channel.New(chSize, mtu, hwAddr)
-	err2 := netStack.CreateNICWithOptions(nicID, ch, stack.NICOptions{
-		Name:     name,
+	ep := channel.New(chSize, mtu, hwAddr)
+	err2 := netStack.CreateNICWithOptions(nicID, ep, stack.NICOptions{
+		Name:     s.Name,
 		Disabled: false,
 		Context:  ctx,
 	})
 	if err2 != nil {
-		return nil, fmt.Errorf("failed to create nic %s: %s", name, err2.String())
+		return 0, nil, fmt.Errorf("failed to create nic %s: %s", s.Name, err2.String())
 	}
 
 	addresses, err := util.ParseIPs(s.Addresses)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse ips: %w", err)
+		return 0, nil, fmt.Errorf("failed to parse ips: %w", err)
 	}
 
 	for _, addr := range addresses {
@@ -129,26 +184,26 @@ func (s StackConfig) configureNetworks(
 			err2 = netStack.AddAddress(nicID, ipv4.ProtocolNumber, tcpip.Address(addr.IP))
 		}
 		if err2 != nil {
-			return nil, fmt.Errorf("failed to address %s to nic %s: %s", addr.String(), name, err2.String())
+			return 0, nil, fmt.Errorf("failed to address %s to nic %s: %s", addr.String(), s.Name, err2.String())
 		}
 	}
 
-	if s.Networks.ARP.Enabled {
+	if s.ProtocolStack.Networks.ARP.Enabled {
 		err2 = netStack.AddAddress(nicID, arp.ProtocolNumber, arp.ProtocolAddress)
 		if err2 != nil {
-			return nil, fmt.Errorf("failed to add arp address: %s", err2.String())
+			return 0, nil, fmt.Errorf("failed to add arp address: %s", err2.String())
 		}
 	}
 
 	var routes []tcpip.Route
-	if s.Networks.IPv4.Enabled {
+	if s.ProtocolStack.Networks.IPv4.Enabled {
 		routes = append(routes, tcpip.Route{
 			Destination: header.IPv4EmptySubnet,
 			NIC:         nicID,
 		})
 	}
 
-	if s.Networks.IPv6.Enabled {
+	if s.ProtocolStack.Networks.IPv6.Enabled {
 		routes = append(routes, tcpip.Route{
 			Destination: header.IPv6EmptySubnet,
 			NIC:         nicID,
@@ -157,24 +212,24 @@ func (s StackConfig) configureNetworks(
 
 	netStack.SetRouteTable(routes)
 
-	return ch, nil
+	return nicID, ep, nil
 }
 
-func (s StackConfig) resolveProtocols() []stack.TransportProtocolFactory {
+func (s Config) resolveProtocols() []stack.TransportProtocolFactory {
 	var ret []stack.TransportProtocolFactory
-	if s.Protocols.TCP.Enabled {
+	if s.ProtocolStack.Protocols.TCP.Enabled {
 		ret = append(ret, tcp.NewProtocol)
 	}
-	if s.Protocols.UDP.Enabled {
+	if s.ProtocolStack.Protocols.UDP.Enabled {
 		ret = append(ret, udp.NewProtocol)
 	}
 
-	if s.Protocols.ICMP.Enabled {
-		if s.Networks.IPv4.Enabled {
+	if s.ProtocolStack.Protocols.ICMP.Enabled {
+		if s.ProtocolStack.Networks.IPv4.Enabled {
 			ret = append(ret, icmp.NewProtocol4)
 		}
 
-		if s.Networks.IPv6.Enabled {
+		if s.ProtocolStack.Networks.IPv6.Enabled {
 			ret = append(ret, icmp.NewProtocol6)
 		}
 	}
@@ -216,15 +271,17 @@ type StackARPConfig struct {
 	Enabled bool `json:"enabled" yaml:"enabled"`
 }
 
+// nolint:unparam
 func (s StackARPConfig) configure(netStack *stack.Stack) error {
 	if !s.Enabled {
 		return nil
 	}
 
-	err := netStack.SetForwarding(arp.ProtocolNumber, true)
-	if err != nil {
-		return fmt.Errorf("failed to enable arp forwarding: %s", err.String())
-	}
+	_ = netStack
+	// err := netStack.SetForwarding(arp.ProtocolNumber, true)
+	// if err != nil {
+	// 	return fmt.Errorf("failed to enable arp forwarding: %s", err.String())
+	// }
 
 	return nil
 }
@@ -303,11 +360,14 @@ func (s StackICMPConfig) configure(netStack *stack.Stack) error {
 }
 
 type StackTCPConfig struct {
-	Enabled bool `json:"enabled" yaml:"enabled"`
-	Buffer  struct {
-		Send BufferConfig `json:"send" yaml:"send"`
-		Recv BufferConfig `json:"recv" yaml:"recv"`
-	} `json:"buffer" yaml:"buffer"`
+	Enabled bool          `json:"enabled" yaml:"enabled"`
+	SAck    bool          `json:"sack" yaml:"sack"`
+	NoDelay bool          `json:"nodelay" yaml:"nodelay"`
+	Linger  time.Duration `json:"linger" yaml:"linger"`
+
+	CongestionControlAlgorithms []string `json:"congestionControlAlgorithms" yaml:"congestionControlAlgorithms"`
+
+	Buffer SendRecvBufferConfig `json:"buffer" yaml:"buffer"`
 }
 
 func (s StackTCPConfig) configure(netStack *stack.Stack) error {
@@ -333,16 +393,37 @@ func (s StackTCPConfig) configure(netStack *stack.Stack) error {
 	}
 
 	tcpSACK := tcpip.TCPSACKEnabled(true)
+	if !s.SAck {
+		tcpSACK = false
+	}
 	err = netStack.SetTransportProtocolOption(tcp.ProtocolNumber, &tcpSACK)
 	if err != nil {
 		return fmt.Errorf("failed to configure tcp sack: %s", err.String())
 	}
 
-	// disable Nagle
 	tcpDelay := tcpip.TCPDelayEnabled(false)
+	if !s.NoDelay {
+		tcpDelay = true
+	}
 	err = netStack.SetTransportProtocolOption(tcp.ProtocolNumber, &tcpDelay)
 	if err != nil {
 		return fmt.Errorf("failed to configure tcp nodelay: %s", err.String())
+	}
+
+	if s.Linger != 0 {
+		tcpLinger := tcpip.TCPLingerTimeoutOption(s.Linger)
+		err = netStack.SetTransportProtocolOption(tcp.ProtocolNumber, &tcpLinger)
+		if err != nil {
+			return fmt.Errorf("failed to configure tcp linger: %s", err.String())
+		}
+	}
+
+	if len(s.CongestionControlAlgorithms) != 0 {
+		ccAlgos := tcpip.TCPAvailableCongestionControlOption(strings.Join(s.CongestionControlAlgorithms, " "))
+		err = netStack.SetTransportProtocolOption(tcp.ProtocolNumber, &ccAlgos)
+		if err != nil {
+			return fmt.Errorf("failed to configure tcp congestion control algorithms: %s", err.String())
+		}
 	}
 
 	return nil
@@ -361,6 +442,11 @@ func (s StackUDPConfig) configure(netStack *stack.Stack) error {
 	return nil
 }
 
+type SendRecvBufferConfig struct {
+	Send BufferConfig `json:"send" yaml:"send"`
+	Recv BufferConfig `json:"recv" yaml:"recv"`
+}
+
 type BufferConfig struct {
 	Min     int `json:"min" yaml:"min"`
 	Max     int `json:"max" yaml:"max"`
@@ -370,15 +456,15 @@ type BufferConfig struct {
 func (c BufferConfig) resolveTCPSendBufOption() *tcpip.TCPSendBufferSizeRangeOption {
 	min, def, max := c.Min, c.Default, c.Max
 	if min == 0 {
-		min = 4096
+		min = 1
 	}
 
 	if max == 0 {
-		max = 2 * 1024 * 1024
+		max = min
 	}
 
 	if def == 0 {
-		def = c.Max
+		def = max
 	}
 
 	return &tcpip.TCPSendBufferSizeRangeOption{
@@ -391,15 +477,15 @@ func (c BufferConfig) resolveTCPSendBufOption() *tcpip.TCPSendBufferSizeRangeOpt
 func (c BufferConfig) resolveTCPRecvBufOption() *tcpip.TCPReceiveBufferSizeRangeOption {
 	min, def, max := c.Min, c.Default, c.Max
 	if min == 0 {
-		min = 4096
+		min = 1
 	}
 
 	if max == 0 {
-		max = 2 * 1024 * 1024
+		max = min
 	}
 
 	if def == 0 {
-		def = c.Max
+		def = max
 	}
 
 	return &tcpip.TCPReceiveBufferSizeRangeOption{

@@ -1,4 +1,4 @@
-# arhat.dev/abbot-proto v0.0.0-20200929091836-58e1aaf44aba
+# arhat.dev/abbot-proto v0.0.0-20201020114139-a23155b11f8d
 ## explicit
 arhat.dev/abbot-proto/abbotgopb
 # arhat.dev/pkg v0.0.0-20201011023427-3d85bac95f31
@@ -25,6 +25,9 @@ github.com/containernetworking/cni/pkg/utils
 github.com/containernetworking/cni/pkg/version
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
+# github.com/dgrijalva/jwt-go v3.2.0+incompatible
+## explicit
+github.com/dgrijalva/jwt-go
 # github.com/evanphx/json-patch v0.0.0-20200808040245-162e5629780b
 github.com/evanphx/json-patch
 # github.com/gogo/protobuf v1.3.1
@@ -346,9 +349,9 @@ google.golang.org/protobuf/types/known/wrapperspb
 # gopkg.in/inf.v0 v0.9.1
 gopkg.in/inf.v0
 # gopkg.in/yaml.v2 v2.3.0
-## explicit
 gopkg.in/yaml.v2
-# gopkg.in/yaml.v3 v3.0.0-20200605160147-a5ece683394c
+# gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
+## explicit
 gopkg.in/yaml.v3
 # gvisor.dev/gvisor v0.0.0-20201001012933-c4f3063255be => gvisor.dev/gvisor v0.0.0-20201001012933-c4f3063255be
 ## explicit

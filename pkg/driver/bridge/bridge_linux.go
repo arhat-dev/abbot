@@ -8,53 +8,10 @@ import (
 
 	"go.uber.org/multierr"
 
-	"arhat.dev/abbot/pkg/driver"
 	"arhat.dev/abbot/pkg/types"
 	"arhat.dev/abbot/pkg/util"
 	"arhat.dev/abbot/pkg/wrap/netlink"
 )
-
-func init() {
-	driver.Register("bridge", "linux", NewDriver, NewConfig)
-}
-
-func NewConfig() interface{} {
-	return &Config{
-		Alias:        "",
-		Promisc:      false,
-		MTU:          1440,
-		TxQLen:       1000,
-		HardwareAddr: "",
-
-		Hairpin:      false,
-		Guard:        false,
-		FastLeave:    false,
-		RootBlock:    false,
-		Learning:     false,
-		Flood:        false,
-		ProxyArp:     false,
-		ProxyArpWiFi: false,
-	}
-}
-
-type Config struct {
-	Addresses []string `json:"addresses" yaml:"addresses"`
-
-	Alias        string `json:"alias" yaml:"alias"`
-	Promisc      bool   `json:"promisc" yaml:"promisc"`
-	MTU          int    `json:"mtu" yaml:"mtu"`
-	TxQLen       int    `json:"txQueueLen" yaml:"txQueueLen"`
-	HardwareAddr string `json:"hardwareAddr" yaml:"hardwareAddr"`
-
-	Hairpin      bool `json:"hairpin" yaml:"hairpin"`
-	Guard        bool `json:"guard" yaml:"guard"`
-	FastLeave    bool `json:"fastLeave" yaml:"fastLeave"`
-	RootBlock    bool `json:"rootBlock" yaml:"rootBlock"`
-	Learning     bool `json:"learning" yaml:"learning"`
-	Flood        bool `json:"flood" yaml:"flood"`
-	ProxyArp     bool `json:"proxyArp" yaml:"proxyArp"`
-	ProxyArpWiFi bool `json:"proxyArpWifi" yaml:"proxyArpWifi"`
-}
 
 func (c *Config) GetLinkAttrs(name string) netlink.LinkAttrs {
 	ret := netlink.NewLinkAttrs()
@@ -66,10 +23,10 @@ func (c *Config) GetLinkAttrs(name string) netlink.LinkAttrs {
 		ret.Promisc = 0
 	}
 
-	ret.MTU = c.MTU
-	ret.TxQLen = c.TxQLen
-	if c.HardwareAddr != "" {
-		ret.HardwareAddr, _ = net.ParseMAC(c.HardwareAddr)
+	ret.MTU = int(c.Mtu)
+	ret.TxQLen = int(c.TxQueueLen)
+	if c.HardwareAddress != "" {
+		ret.HardwareAddr, _ = net.ParseMAC(c.HardwareAddress)
 	}
 	ret.Protinfo = &netlink.Protinfo{
 		Hairpin:      c.Hairpin,
@@ -79,13 +36,13 @@ func (c *Config) GetLinkAttrs(name string) netlink.LinkAttrs {
 		Learning:     c.Learning,
 		Flood:        c.Flood,
 		ProxyArp:     c.ProxyArp,
-		ProxyArpWiFi: c.ProxyArpWiFi,
+		ProxyArpWiFi: c.ProxyArpWifi,
 	}
 
 	return ret
 }
 
-func NewDriver(ctx context.Context, name string, cfg interface{}) (types.Driver, error) {
+func NewDriver(ctx context.Context, cfg interface{}) (types.Driver, error) {
 	config, ok := cfg.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("invalid non bridge driver config")
@@ -98,7 +55,7 @@ func NewDriver(ctx context.Context, name string, cfg interface{}) (types.Driver,
 
 	return &Driver{
 		ctx:  ctx,
-		name: name,
+		name: config.Name,
 
 		h: &netlink.Handle{},
 
@@ -128,8 +85,8 @@ func (d *Driver) updateLink(link netlink.Link) error {
 		attrs  = link.Attrs()
 	)
 
-	if d.config.HardwareAddr != "" {
-		hwAddr, err = net.ParseMAC(d.config.HardwareAddr)
+	if d.config.HardwareAddress != "" {
+		hwAddr, err = net.ParseMAC(d.config.HardwareAddress)
 		if err != nil {
 			return fmt.Errorf("failed to parse hw address: %w", err)
 		}
@@ -170,18 +127,18 @@ func (d *Driver) updateLink(link netlink.Link) error {
 		case attrs.Protinfo.ProxyArp != d.config.ProxyArp:
 			err = multierr.Append(err, d.h.LinkSetBrProxyArp(link, d.config.ProxyArp))
 			attrs.Protinfo.ProxyArp = d.config.ProxyArp
-		case attrs.Protinfo.ProxyArpWiFi != d.config.ProxyArpWiFi:
-			err = multierr.Append(err, d.h.LinkSetBrProxyArpWiFi(link, d.config.ProxyArpWiFi))
-			attrs.Protinfo.ProxyArpWiFi = d.config.ProxyArpWiFi
+		case attrs.Protinfo.ProxyArpWiFi != d.config.ProxyArpWifi:
+			err = multierr.Append(err, d.h.LinkSetBrProxyArpWiFi(link, d.config.ProxyArpWifi))
+			attrs.Protinfo.ProxyArpWiFi = d.config.ProxyArpWifi
 		case attrs.Protinfo.RootBlock != d.config.RootBlock:
 			err = multierr.Append(err, d.h.LinkSetRootBlock(link, d.config.RootBlock))
 			attrs.Protinfo.RootBlock = d.config.RootBlock
-		case attrs.MTU != d.config.MTU:
-			err = multierr.Append(err, d.h.LinkSetMTU(link, d.config.MTU))
-			attrs.MTU = d.config.MTU
-		case attrs.TxQLen != d.config.TxQLen:
-			err = multierr.Append(err, d.h.LinkSetTxQLen(link, d.config.MTU))
-			attrs.TxQLen = d.config.TxQLen
+		case attrs.MTU != int(d.config.Mtu):
+			err = multierr.Append(err, d.h.LinkSetMTU(link, int(d.config.Mtu)))
+			attrs.MTU = int(d.config.Mtu)
+		case attrs.TxQLen != int(d.config.TxQueueLen):
+			err = multierr.Append(err, d.h.LinkSetTxQLen(link, int(d.config.TxQueueLen)))
+			attrs.TxQLen = int(d.config.TxQueueLen)
 		case len(hwAddr) > 0 && !bytes.Equal(attrs.HardwareAddr, hwAddr):
 			err = multierr.Append(err, d.h.LinkSetHardwareAddr(link, hwAddr))
 			attrs.HardwareAddr = hwAddr

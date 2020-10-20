@@ -93,45 +93,60 @@ func NewAbbotCmd() *cobra.Command {
 }
 
 func run(ctx context.Context, config *conf.AbbotConfig) error {
-	u, err := url.Parse(config.Abbot.Listen)
-	if err != nil {
-		return err
-	}
-
-	addr := u.Host
-	if u.Scheme == "unix" {
-		addr = u.Path
-		// clean up previous unix socket file
-		if err = os.Remove(addr); err != nil && !os.IsNotExist(err) {
+	errCh := make(chan error)
+	var netMgrServer *grpc.Server
+	if config.Abbot.Listen == "" {
+		u, err := url.Parse(config.Abbot.Listen)
+		if err != nil {
 			return err
 		}
+
+		addr := u.Host
+		if u.Scheme == "unix" {
+			addr = u.Path
+			// clean up previous unix socket file
+			if err = os.Remove(addr); err != nil && !os.IsNotExist(err) {
+				return err
+			}
+		}
+
+		l, err := net.Listen(u.Scheme, addr)
+		if err != nil {
+			return err
+		}
+
+		netMgrServer = grpc.NewServer()
+
+		go func() {
+			select {
+			case errCh <- netMgrServer.Serve(l):
+			case <-ctx.Done():
+			}
+		}()
+
+		defer func() {
+			netMgrServer.Stop()
+			l.Close()
+			if u.Scheme == "unix" {
+				_ = os.Remove(addr)
+			}
+		}()
 	}
 
-	l, err := net.Listen(u.Scheme, addr)
-	if err != nil {
-		return err
+	if netMgrServer != nil {
+		// container manager only accepts dynamic config, thus control endpoint is required
+		containerMgr, err := container.NewManager(ctx, &config.ContainerNetwork)
+		if err != nil {
+			return err
+		}
+
+		abbotgopb.RegisterNetworkManagerServer(netMgrServer, containerMgr)
 	}
 
 	hostMgr, err := host.NewManager(ctx, &config.HostNetwork)
 	if err != nil {
 		return err
 	}
-
-	containerMgr, err := container.NewManager(ctx, &config.ContainerNetwork)
-	if err != nil {
-		return err
-	}
-
-	netMgrServer := grpc.NewServer()
-	abbotgopb.RegisterNetworkManagerServer(netMgrServer, containerMgr)
-
-	errCh := make(chan error)
-	go func() {
-		select {
-		case errCh <- netMgrServer.Serve(l):
-		case <-ctx.Done():
-		}
-	}()
 
 	go func() {
 		select {

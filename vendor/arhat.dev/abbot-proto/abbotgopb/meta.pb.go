@@ -26,8 +26,9 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type NetworkInterface struct {
 	Name            string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Addresses       []string `protobuf:"bytes,2,rep,name=addresses,proto3" json:"addresses,omitempty"`
+	Mtu             int32    `protobuf:"varint,2,opt,name=mtu,proto3" json:"mtu,omitempty"`
 	HardwareAddress string   `protobuf:"bytes,3,opt,name=hardware_address,json=hardwareAddress,proto3" json:"hardware_address,omitempty"`
+	Addresses       []string `protobuf:"bytes,4,rep,name=addresses,proto3" json:"addresses,omitempty"`
 }
 
 func (m *NetworkInterface) Reset()      { *m = NetworkInterface{} }
@@ -69,11 +70,11 @@ func (m *NetworkInterface) GetName() string {
 	return ""
 }
 
-func (m *NetworkInterface) GetAddresses() []string {
+func (m *NetworkInterface) GetMtu() int32 {
 	if m != nil {
-		return m.Addresses
+		return m.Mtu
 	}
-	return nil
+	return 0
 }
 
 func (m *NetworkInterface) GetHardwareAddress() string {
@@ -83,6 +84,13 @@ func (m *NetworkInterface) GetHardwareAddress() string {
 	return ""
 }
 
+func (m *NetworkInterface) GetAddresses() []string {
+	if m != nil {
+		return m.Addresses
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*NetworkInterface)(nil), "abbot.NetworkInterface")
 }
@@ -90,21 +98,22 @@ func init() {
 func init() { proto.RegisterFile("meta.proto", fileDescriptor_3b5ea8fe65782bcc) }
 
 var fileDescriptor_3b5ea8fe65782bcc = []byte{
-	// 212 bytes of a gzipped FileDescriptorProto
+	// 228 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0xca, 0x4d, 0x2d, 0x49,
-	0xd4, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x4d, 0x4c, 0x4a, 0xca, 0x2f, 0x51, 0xca, 0xe7,
-	0x12, 0xf0, 0x4b, 0x2d, 0x29, 0xcf, 0x2f, 0xca, 0xf6, 0xcc, 0x2b, 0x49, 0x2d, 0x4a, 0x4b, 0x4c,
-	0x4e, 0x15, 0x12, 0xe2, 0x62, 0xc9, 0x4b, 0xcc, 0x4d, 0x95, 0x60, 0x54, 0x60, 0xd4, 0xe0, 0x0c,
-	0x02, 0xb3, 0x85, 0x64, 0xb8, 0x38, 0x13, 0x53, 0x52, 0x8a, 0x52, 0x8b, 0x8b, 0x53, 0x8b, 0x25,
-	0x98, 0x14, 0x98, 0x35, 0x38, 0x83, 0x10, 0x02, 0x42, 0x9a, 0x5c, 0x02, 0x19, 0x89, 0x45, 0x29,
-	0xe5, 0x89, 0x45, 0xa9, 0xf1, 0x50, 0x51, 0x09, 0x66, 0xb0, 0x6e, 0x7e, 0x98, 0xb8, 0x23, 0x44,
-	0xd8, 0x29, 0xf4, 0xc2, 0x43, 0x39, 0x86, 0x1b, 0x0f, 0xe5, 0x18, 0x3e, 0x3c, 0x94, 0x63, 0x6c,
-	0x78, 0x24, 0xc7, 0xb8, 0xe2, 0x91, 0x1c, 0xe3, 0x89, 0x47, 0x72, 0x8c, 0x17, 0x1e, 0xc9, 0x31,
-	0x3e, 0x78, 0x24, 0xc7, 0xf8, 0xe2, 0x91, 0x1c, 0xc3, 0x87, 0x47, 0x72, 0x8c, 0x13, 0x1e, 0xcb,
-	0x31, 0x5c, 0x78, 0x2c, 0xc7, 0x70, 0xe3, 0xb1, 0x1c, 0x43, 0x94, 0x7c, 0x62, 0x51, 0x46, 0x62,
-	0x89, 0x5e, 0x4a, 0x6a, 0x99, 0x3e, 0xd8, 0xdd, 0xba, 0x60, 0x4f, 0x40, 0xd8, 0xe9, 0xf9, 0x05,
-	0x49, 0x49, 0x6c, 0x60, 0x01, 0x63, 0x40, 0x00, 0x00, 0x00, 0xff, 0xff, 0xc3, 0x94, 0xbf, 0x43,
-	0xe3, 0x00, 0x00, 0x00,
+	0xd4, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x4d, 0x4c, 0x4a, 0xca, 0x2f, 0x51, 0x6a, 0x64,
+	0xe4, 0x12, 0xf0, 0x4b, 0x2d, 0x29, 0xcf, 0x2f, 0xca, 0xf6, 0xcc, 0x2b, 0x49, 0x2d, 0x4a, 0x4b,
+	0x4c, 0x4e, 0x15, 0x12, 0xe2, 0x62, 0xc9, 0x4b, 0xcc, 0x4d, 0x95, 0x60, 0x54, 0x60, 0xd4, 0xe0,
+	0x0c, 0x02, 0xb3, 0x85, 0x04, 0xb8, 0x98, 0x73, 0x4b, 0x4a, 0x25, 0x98, 0x14, 0x18, 0x35, 0x58,
+	0x83, 0x40, 0x4c, 0x21, 0x4d, 0x2e, 0x81, 0x8c, 0xc4, 0xa2, 0x94, 0xf2, 0xc4, 0xa2, 0xd4, 0xf8,
+	0xc4, 0x94, 0x94, 0xa2, 0xd4, 0xe2, 0x62, 0x09, 0x66, 0xb0, 0x0e, 0x7e, 0x98, 0xb8, 0x23, 0x44,
+	0x58, 0x48, 0x86, 0x8b, 0x13, 0xaa, 0x22, 0xb5, 0x58, 0x82, 0x45, 0x81, 0x59, 0x83, 0x33, 0x08,
+	0x21, 0xe0, 0x14, 0x7a, 0xe1, 0xa1, 0x1c, 0xc3, 0x8d, 0x87, 0x72, 0x0c, 0x1f, 0x1e, 0xca, 0x31,
+	0x36, 0x3c, 0x92, 0x63, 0x5c, 0xf1, 0x48, 0x8e, 0xf1, 0xc4, 0x23, 0x39, 0xc6, 0x0b, 0x8f, 0xe4,
+	0x18, 0x1f, 0x3c, 0x92, 0x63, 0x7c, 0xf1, 0x48, 0x8e, 0xe1, 0xc3, 0x23, 0x39, 0xc6, 0x09, 0x8f,
+	0xe5, 0x18, 0x2e, 0x3c, 0x96, 0x63, 0xb8, 0xf1, 0x58, 0x8e, 0x21, 0x4a, 0x3e, 0xb1, 0x28, 0x23,
+	0xb1, 0x44, 0x2f, 0x25, 0xb5, 0x4c, 0x1f, 0xec, 0x15, 0x5d, 0xb0, 0xbf, 0x20, 0xec, 0xf4, 0xfc,
+	0x82, 0xa4, 0x24, 0x36, 0xb0, 0x80, 0x31, 0x20, 0x00, 0x00, 0xff, 0xff, 0x93, 0x8a, 0xcf, 0x07,
+	0xf6, 0x00, 0x00, 0x00,
 }
 
 func (this *NetworkInterface) Equal(that interface{}) bool {
@@ -129,6 +138,12 @@ func (this *NetworkInterface) Equal(that interface{}) bool {
 	if this.Name != that1.Name {
 		return false
 	}
+	if this.Mtu != that1.Mtu {
+		return false
+	}
+	if this.HardwareAddress != that1.HardwareAddress {
+		return false
+	}
 	if len(this.Addresses) != len(that1.Addresses) {
 		return false
 	}
@@ -137,20 +152,18 @@ func (this *NetworkInterface) Equal(that interface{}) bool {
 			return false
 		}
 	}
-	if this.HardwareAddress != that1.HardwareAddress {
-		return false
-	}
 	return true
 }
 func (this *NetworkInterface) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 7)
+	s := make([]string, 0, 8)
 	s = append(s, "&abbotgopb.NetworkInterface{")
 	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
-	s = append(s, "Addresses: "+fmt.Sprintf("%#v", this.Addresses)+",\n")
+	s = append(s, "Mtu: "+fmt.Sprintf("%#v", this.Mtu)+",\n")
 	s = append(s, "HardwareAddress: "+fmt.Sprintf("%#v", this.HardwareAddress)+",\n")
+	s = append(s, "Addresses: "+fmt.Sprintf("%#v", this.Addresses)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -182,6 +195,15 @@ func (m *NetworkInterface) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.Addresses) > 0 {
+		for iNdEx := len(m.Addresses) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.Addresses[iNdEx])
+			copy(dAtA[i:], m.Addresses[iNdEx])
+			i = encodeVarintMeta(dAtA, i, uint64(len(m.Addresses[iNdEx])))
+			i--
+			dAtA[i] = 0x22
+		}
+	}
 	if len(m.HardwareAddress) > 0 {
 		i -= len(m.HardwareAddress)
 		copy(dAtA[i:], m.HardwareAddress)
@@ -189,14 +211,10 @@ func (m *NetworkInterface) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x1a
 	}
-	if len(m.Addresses) > 0 {
-		for iNdEx := len(m.Addresses) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.Addresses[iNdEx])
-			copy(dAtA[i:], m.Addresses[iNdEx])
-			i = encodeVarintMeta(dAtA, i, uint64(len(m.Addresses[iNdEx])))
-			i--
-			dAtA[i] = 0x12
-		}
+	if m.Mtu != 0 {
+		i = encodeVarintMeta(dAtA, i, uint64(m.Mtu))
+		i--
+		dAtA[i] = 0x10
 	}
 	if len(m.Name) > 0 {
 		i -= len(m.Name)
@@ -229,15 +247,18 @@ func (m *NetworkInterface) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovMeta(uint64(l))
 	}
+	if m.Mtu != 0 {
+		n += 1 + sovMeta(uint64(m.Mtu))
+	}
+	l = len(m.HardwareAddress)
+	if l > 0 {
+		n += 1 + l + sovMeta(uint64(l))
+	}
 	if len(m.Addresses) > 0 {
 		for _, s := range m.Addresses {
 			l = len(s)
 			n += 1 + l + sovMeta(uint64(l))
 		}
-	}
-	l = len(m.HardwareAddress)
-	if l > 0 {
-		n += 1 + l + sovMeta(uint64(l))
 	}
 	return n
 }
@@ -254,8 +275,9 @@ func (this *NetworkInterface) String() string {
 	}
 	s := strings.Join([]string{`&NetworkInterface{`,
 		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
-		`Addresses:` + fmt.Sprintf("%v", this.Addresses) + `,`,
+		`Mtu:` + fmt.Sprintf("%v", this.Mtu) + `,`,
 		`HardwareAddress:` + fmt.Sprintf("%v", this.HardwareAddress) + `,`,
+		`Addresses:` + fmt.Sprintf("%v", this.Addresses) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -330,10 +352,10 @@ func (m *NetworkInterface) Unmarshal(dAtA []byte) error {
 			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Addresses", wireType)
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Mtu", wireType)
 			}
-			var stringLen uint64
+			m.Mtu = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowMeta
@@ -343,24 +365,11 @@ func (m *NetworkInterface) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				m.Mtu |= int32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthMeta
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthMeta
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Addresses = append(m.Addresses, string(dAtA[iNdEx:postIndex]))
-			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field HardwareAddress", wireType)
@@ -392,6 +401,38 @@ func (m *NetworkInterface) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.HardwareAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Addresses", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMeta
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthMeta
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthMeta
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Addresses = append(m.Addresses, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

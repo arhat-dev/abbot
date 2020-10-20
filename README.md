@@ -12,10 +12,23 @@ Network manager living at edge
 
 - [x] Host Network Management
   - Drivers
-    - [x] tun based `wireguard` (linux, windows, macos, freebsd, openbsd)
+    - [ ] `wireguard` (linux)
+    - [x] `wireguard` over `tun`(L3) devices (linux, windows, macos, freebsd, openbsd)
     - [x] `bridge` (linux)
-    - [ ] [`usernet`](./docs/Driver-usernet.md) (linux, aix, windows, macos, freebsd, openbsd, dragonfly, solaris, netbsd)
+    - [ ] (WIP) [`usernet`](./docs/Driver-usernet.md) (linux, aix, windows, macos, freebsd, openbsd, dragonfly, solaris, netbsd)
+      - underlay network:
+        - `gVisor` over `tun`
+      - overlay network:
+        - `mqtt`
 - [x] Container Network Management
+
+## Development
+
+### Implement custom drivers
+
+1. Add your driver config in [`abbot-proto/src/driver_<driver_name>.proto`](https://github.com/arhat-dev/abbot-proto/blob/master/src) and generate files.
+2. Implement your driver, register your driver config and driver factory func in a new package [pkg/driver/<driver_name>](./pkg/driver)
+3. Add your driver in [pkg/driver/driveradd/add_<driver_name>.go](./pkg/driver/driveradd) by importing the package and restricting build tags
 
 ## LICENSE
 

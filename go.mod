@@ -43,9 +43,10 @@ replace (
 replace gvisor.dev/gvisor => gvisor.dev/gvisor v0.0.0-20201001012933-c4f3063255be
 
 require (
-	arhat.dev/abbot-proto v0.0.0-20200929091836-58e1aaf44aba
+	arhat.dev/abbot-proto v0.0.0-20201020114139-a23155b11f8d
 	arhat.dev/pkg v0.0.0-20201011023427-3d85bac95f31
 	github.com/containernetworking/cni v0.8.0
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/goiiot/libmqtt v0.9.6
 	github.com/klauspost/compress v1.11.1 // indirect
 	github.com/spf13/cobra v1.1.0
@@ -60,6 +61,6 @@ require (
 	golang.zx2c4.com/wireguard/wgctrl v0.0.0-20200609130330-bd2cb7843e1b
 	golang.zx2c4.com/wireguard/windows v0.1.1
 	google.golang.org/grpc v1.32.0
-	gopkg.in/yaml.v2 v2.3.0
+	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 	gvisor.dev/gvisor v0.0.0-20201001012933-c4f3063255be
 )

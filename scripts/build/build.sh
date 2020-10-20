@@ -32,7 +32,7 @@ _build() {
 
 abbot() {
   # TODO: set mandatory tags and predefined tags for specific platforms
-  _build "CGO_ENABLED=0 ${GOBUILD} -tags='nokube nocloud netgo ${PREDEFINED_BUILD_TAGS} ${TAGS}' ./cmd/abbot"
+  _build "CGO_ENABLED=0 ${GOBUILD} -tags='nokube nocloud netgo nousernet ${PREDEFINED_BUILD_TAGS} ${TAGS}' ./cmd/abbot"
 }
 
 COMP=$(printf "%s" "$@" | cut -d. -f1)

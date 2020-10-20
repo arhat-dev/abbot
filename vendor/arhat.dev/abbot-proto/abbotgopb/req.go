@@ -19,6 +19,8 @@ func NewRequest(req proto.Marshaler) (*Request, error) {
 		kind = REQ_DELETE_CTR_NETWORK
 	case *ContainerNetworkConfigEnsureRequest:
 		kind = REQ_ENSURE_CTR_NETWORK_CONFIG
+	case *HostNetworkConfigEnsureRequest:
+		kind = REQ_ENSURE_HOST_NETWORK_CONFIG
 	default:
 		return nil, fmt.Errorf("unkonw request type")
 	}
@@ -79,5 +81,13 @@ func NewContainerNetworkConfigEnsureRequest(
 	return &ContainerNetworkConfigEnsureRequest{
 		Ipv4Subnet: ipv4Subnet,
 		Ipv6Subnet: ipv6Subnet,
+	}
+}
+
+func NewHostNetworkConfigEnsureRequest(
+	interfaces ...*HostNetworkInterface,
+) *HostNetworkConfigEnsureRequest {
+	return &HostNetworkConfigEnsureRequest{
+		Expected: interfaces,
 	}
 }

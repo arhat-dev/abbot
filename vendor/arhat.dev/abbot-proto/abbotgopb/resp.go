@@ -17,6 +17,8 @@ func NewResponse(resp proto.Marshaler) (*Response, error) {
 		kind = RESP_CTR_NETWORK_STATUS
 	case *ContainerNetworkStatusListResponse:
 		kind = RESP_CTR_NETWORK_STATUS_LIST
+	case *HostNetworkStatusResponse:
+		kind = RESP_HOST_NETWORK_STATUS
 	default:
 		return nil, fmt.Errorf("unkonw response type")
 	}
@@ -44,5 +46,13 @@ func NewContainerNetworkStatusListResponse(
 ) *ContainerNetworkStatusListResponse {
 	return &ContainerNetworkStatusListResponse{
 		ContainerNetworks: nets,
+	}
+}
+
+func NewHostNetworkStatusResponse(
+	interfaces ...*HostNetworkInterface,
+) *HostNetworkStatusResponse {
+	return &HostNetworkStatusResponse{
+		Actual: interfaces,
 	}
 }

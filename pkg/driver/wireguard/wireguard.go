@@ -31,7 +31,7 @@ func init() {
 	driver.Register(DriverName, "linux", NewDriver, NewConfig)
 }
 
-func NewDriver(ctx context.Context, name string, cfg interface{}) (types.Driver, error) {
+func NewDriver(ctx context.Context, cfg interface{}) (types.Driver, error) {
 	config, ok := cfg.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("invalid non wireguard driver config")
@@ -44,7 +44,7 @@ func NewDriver(ctx context.Context, name string, cfg interface{}) (types.Driver,
 
 	var allAllowedIPs []string
 	for _, p := range config.Peers {
-		allAllowedIPs = append(allAllowedIPs, p.AllowedIPs...)
+		allAllowedIPs = append(allAllowedIPs, p.AllowedIps...)
 	}
 
 	allowedIPs, err := util.ParseIPNets(allAllowedIPs)
@@ -59,7 +59,7 @@ func NewDriver(ctx context.Context, name string, cfg interface{}) (types.Driver,
 
 	return &Driver{
 		ctx:    ctx,
-		name:   name,
+		name:   config.Name,
 		config: config,
 
 		ips:           ips,
@@ -108,7 +108,7 @@ func (d *Driver) ensureEveryThing() error {
 	}
 
 	if d.config.Routing.Enabled {
-		err = ensureRoute(d.name, d.config.Routing.Table, d.allAllowedIPs)
+		err = ensureRoute(d.name, int(d.config.Routing.Table), d.allAllowedIPs)
 		if err != nil && !strings.Contains(err.Error(), "down") {
 			return err
 		}
@@ -142,7 +142,7 @@ func (d *Driver) Ensure(up bool) (err error) {
 		return nil
 	}
 
-	tunDev, err := createTun(d.name, d.config.MTU)
+	tunDev, err := createTun(d.name, int(d.config.Mtu))
 	if err != nil {
 		return err
 	}
@@ -257,7 +257,7 @@ func (d *Driver) delete(recoverable bool) error {
 		d.dev = nil
 	}
 
-	_ = ensureRoute(d.name, d.config.Routing.Table, nil)
+	_ = ensureRoute(d.name, int(d.config.Routing.Table), nil)
 
 	return nil
 }
@@ -294,8 +294,8 @@ func (d *Driver) ensureDeviceConfig() error {
 	switch {
 	case d.wgCfg.PrivateKey != nil &&
 		!bytes.Equal(d.wgCfg.PrivateKey[:], currentDev.PrivateKey[:]),
-		currentDev.ListenPort != d.config.ListenPort,
-		currentDev.FirewallMark != d.config.Routing.FirewallMark:
+		d.config.ListenPort > 0 && currentDev.ListenPort != int(d.config.ListenPort),
+		currentDev.FirewallMark != int(d.config.Routing.FirewallMark):
 
 		// device not update to date, need to update
 		updateConfig = &wgtypes.Config{

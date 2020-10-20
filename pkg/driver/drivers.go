@@ -18,7 +18,7 @@ type factory struct {
 }
 
 type (
-	FactoryFunc       func(ctx context.Context, name string, cfg interface{}) (types.Driver, error)
+	FactoryFunc       func(ctx context.Context, cfg interface{}) (types.Driver, error)
 	ConfigFactoryFunc func() interface{}
 )
 
@@ -34,16 +34,16 @@ func Register(name, os string, newDriver FactoryFunc, newDriverConfig ConfigFact
 	}
 }
 
-func NewDriver(ctx context.Context, name, os, ifname string, cfg interface{}) (types.Driver, error) {
+func NewDriver(ctx context.Context, driverName, os string, cfg interface{}) (types.Driver, error) {
 	f, ok := supportedDrivers[key{
-		name: name,
+		name: driverName,
 		os:   os,
 	}]
 	if !ok {
-		return nil, fmt.Errorf("driver for %s on %s not found", name, os)
+		return nil, fmt.Errorf("driver %s on %s not found", driverName, os)
 	}
 
-	return f.newDriver(ctx, ifname, cfg)
+	return f.newDriver(ctx, cfg)
 }
 
 func NewConfig(name, os string) (interface{}, error) {

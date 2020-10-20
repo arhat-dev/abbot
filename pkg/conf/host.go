@@ -1,20 +1,23 @@
 package conf
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"runtime"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
 	"arhat.dev/abbot/pkg/driver"
 )
 
-type InterfaceConfig struct {
-	Name   string `json:"name" yaml:"name"`
-	Driver string `json:"driver" yaml:"driver"`
+type DriverConfig interface{}
 
-	Config interface{} `json:"config" yaml:"config"`
+type InterfaceConfig struct {
+	Driver string `json:"-" yaml:"-"`
+	Name   string `json:"-" yaml:"-"`
+
+	DriverConfig `json:",inline" yaml:",inline"`
 }
 
 func (c *InterfaceConfig) UnmarshalJSON(data []byte) error {
@@ -25,7 +28,7 @@ func (c *InterfaceConfig) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	c.Name, c.Driver, c.Config, err = unmarshalInterfaceConfig(m)
+	c.Driver, c.Name, c.DriverConfig, err = unmarshalInterfaceConfig(m)
 	if err != nil {
 		return err
 	}
@@ -33,15 +36,20 @@ func (c *InterfaceConfig) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (c *InterfaceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (c *InterfaceConfig) UnmarshalYAML(value *yaml.Node) error {
 	m := make(map[string]interface{})
 
-	err := unmarshal(&m)
+	configData, err := yaml.Marshal(value)
 	if err != nil {
 		return err
 	}
 
-	c.Name, c.Driver, c.Config, err = unmarshalInterfaceConfig(m)
+	err = yaml.Unmarshal(configData, &m)
+	if err != nil {
+		return err
+	}
+
+	c.Driver, c.Name, c.DriverConfig, err = unmarshalInterfaceConfig(m)
 	if err != nil {
 		return err
 	}
@@ -49,62 +57,47 @@ func (c *InterfaceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error
 	return nil
 }
 
-func unmarshalInterfaceConfig(m map[string]interface{}) (name, driverName string, config interface{}, err error) {
-	n, ok := m["name"]
-	if !ok {
-		err = fmt.Errorf("must specify interface name")
-		return
-	}
-
-	name, ok = n.(string)
-	if !ok {
-		err = fmt.Errorf("device name must be a string")
-		return
-	}
-
+func unmarshalInterfaceConfig(m map[string]interface{}) (driverName, ifname string, _ interface{}, _ error) {
 	d, ok := m["driver"]
 	if !ok {
-		err = fmt.Errorf("must specify driver name")
-		return
+		return "", "", nil, fmt.Errorf("must specify driver type")
 	}
 
 	driverName, ok = d.(string)
 	if !ok {
-		err = fmt.Errorf("driver name must be a string")
-		return
+		return "", "", nil, fmt.Errorf("driver type must be a string")
 	}
 
-	config, err = driver.NewConfig(driverName, runtime.GOOS)
-	if err != nil {
-		return name, driverName, nil, nil
-	}
-
-	configRaw, ok := m["config"]
+	n, ok := m["name"]
 	if !ok {
-		err = fmt.Errorf("must provide driver config")
-		return
+		return "", "", nil, fmt.Errorf("must specify interface name")
 	}
 
-	var configData []byte
-	switch d := configRaw.(type) {
-	case []byte:
-		configData = d
-	case string:
-		configData = []byte(d)
-	default:
-		configData, err = yaml.Marshal(d)
-		if err != nil {
-			err = fmt.Errorf("failed to get driver config bytes: %w", err)
-			return
-		}
+	ifname, ok = n.(string)
+	if !ok || ifname == "" {
+		return "", "", nil, fmt.Errorf("invalid interface name: %s", ifname)
 	}
 
-	err = yaml.UnmarshalStrict(configData, config)
+	delete(m, "driver")
+
+	configData, err := json.Marshal(m)
 	if err != nil {
-		return
+		return "", "", nil, fmt.Errorf("failed to get driver config bytes: %w", err)
 	}
 
-	return name, driverName, config, nil
+	config, err := driver.NewConfig(driverName, runtime.GOOS)
+	if err != nil {
+		return "", "", nil, fmt.Errorf("unknown driver %s: %w", driverName, err)
+	}
+
+	dec := json.NewDecoder(bytes.NewReader(configData))
+	dec.DisallowUnknownFields()
+	err = dec.Decode(config)
+	if err != nil {
+		return "", "", nil, fmt.Errorf("failed to resolve driver config %s: %w", driverName, err)
+	}
+
+	return driverName, ifname, config, nil
 }
 
 type HostNetworkConfig struct {
