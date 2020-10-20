@@ -11,6 +11,7 @@ import (
 	"go.uber.org/multierr"
 
 	"arhat.dev/abbot/pkg/conf"
+	"arhat.dev/abbot/pkg/container"
 	"arhat.dev/abbot/pkg/driver"
 	"arhat.dev/abbot/pkg/types"
 )
@@ -21,12 +22,15 @@ type Manager struct {
 
 	hostDeviceNameSeq []string
 	hostDevices       map[string]types.Driver
-	hostMU            *sync.RWMutex
+	mu                *sync.RWMutex
+
+	containerMgr *container.Manager
 }
 
 func NewManager(
 	ctx context.Context,
 	hostNetwork *conf.HostNetworkConfig,
+	containerMgr *container.Manager,
 ) (*Manager, error) {
 
 	var nameSeq []string
@@ -51,18 +55,20 @@ func NewManager(
 
 		hostDeviceNameSeq: nameSeq,
 		hostDevices:       hostDevices,
-		hostMU:            new(sync.RWMutex),
+		mu:                new(sync.RWMutex),
+
+		containerMgr: containerMgr,
 	}, nil
 }
 
 func (m *Manager) Start() error {
 	var err error
 	err = func() error {
-		m.hostMU.Lock()
-		defer m.hostMU.Unlock()
+		m.mu.Lock()
+		defer m.mu.Unlock()
 
 		m.logger.D("ensuring all host interfaces for the first time")
-		m.hostDeviceNameSeq, err = ensureAllDevices(m.hostDeviceNameSeq, m.hostDevices)
+		m.hostDeviceNameSeq, err = m.ensureAllDevices(m.hostDeviceNameSeq, m.hostDevices)
 		if err != nil {
 			return fmt.Errorf("failed to ensure all host interfaces running for the first time: %w", err)
 		}
@@ -82,8 +88,8 @@ func (m *Manager) Start() error {
 	case <-m.ctx.Done():
 	}
 
-	m.hostMU.Lock()
-	defer m.hostMU.Unlock()
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	for i := len(m.hostDeviceNameSeq) - 1; i >= 0; i-- {
 		name := m.hostDeviceNameSeq[i]
 		dev, ok := m.hostDevices[name]
@@ -107,22 +113,23 @@ func (m *Manager) ensureHostInterfacesPeriodically(interval time.Duration) {
 	for {
 		select {
 		case <-tk.C:
-			m.hostMU.RLock()
 			m.logger.V("routine: ensuring all host interfaces")
-			_, err := ensureAllDevices(m.hostDeviceNameSeq, m.hostDevices)
+			_, err := m.ensureAllDevices(m.hostDeviceNameSeq, m.hostDevices)
 			if err != nil {
 				m.logger.I("failed to ensure all host interfaces running", log.Error(err))
 			} else {
 				m.logger.V("routine: all host interfaces running")
 			}
-			m.hostMU.RUnlock()
 		case <-m.ctx.Done():
 			return
 		}
 	}
 }
 
-func ensureAllDevices(devSeq []string, hostDevices map[string]types.Driver) ([]string, error) {
+func (m *Manager) ensureAllDevices(devSeq []string, hostDevices map[string]types.Driver) ([]string, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	var (
 		newSeq []string
 		err    error

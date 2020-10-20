@@ -5,7 +5,10 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"reflect"
+	"sync"
 
+	"arhat.dev/abbot-proto/abbotgopb"
 	"go.uber.org/multierr"
 
 	"arhat.dev/abbot/pkg/types"
@@ -43,9 +46,23 @@ func (c *Config) GetLinkAttrs(name string) netlink.LinkAttrs {
 }
 
 func NewDriver(ctx context.Context, cfg interface{}) (types.Driver, error) {
-	config, ok := cfg.(*Config)
-	if !ok {
-		return nil, fmt.Errorf("invalid non bridge driver config")
+	var config *Config
+	switch c := cfg.(type) {
+	case *Config:
+		config = c
+	case *abbotgopb.HostNetworkInterface:
+		if c.Metadata == nil {
+			return nil, fmt.Errorf("no metadata provided")
+		}
+		if c.GetBridge() == nil {
+			return nil, fmt.Errorf("invalid non bridge config")
+		}
+		config = &Config{
+			NetworkInterface: *c.Metadata,
+			DriverBridge:     *c.GetBridge(),
+		}
+	default:
+		return nil, fmt.Errorf("unknown bridge config type: %s", reflect.TypeOf(cfg).String())
 	}
 
 	addrs, err := util.ParseIPs(config.Addresses)
@@ -61,6 +78,7 @@ func NewDriver(ctx context.Context, cfg interface{}) (types.Driver, error) {
 
 		ips:    addrs,
 		config: config,
+		mu:     new(sync.RWMutex),
 	}, nil
 }
 
@@ -72,6 +90,7 @@ type Driver struct {
 
 	ips    map[string]*netlink.Addr
 	config *Config
+	mu     *sync.RWMutex
 }
 
 func (d *Driver) Name() string {
@@ -79,6 +98,9 @@ func (d *Driver) Name() string {
 }
 
 func (d *Driver) updateLink(link netlink.Link) error {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
 	var (
 		err    error
 		hwAddr net.HardwareAddr
@@ -148,6 +170,42 @@ func (d *Driver) updateLink(link netlink.Link) error {
 	}
 
 	return nil
+}
+
+func (d *Driver) EnsureConfig(config *abbotgopb.HostNetworkInterface) error {
+	if config.Metadata == nil {
+		return fmt.Errorf("no metadata provided")
+	}
+
+	if config.GetBridge() == nil {
+		return fmt.Errorf("not a wireguard interface")
+	}
+
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	d.config = &Config{
+		NetworkInterface: *config.Metadata,
+		DriverBridge:     *config.GetBridge(),
+	}
+	link, err := d.h.LinkByName(d.name)
+	if err != nil {
+		return fmt.Errorf("failed to find link %s: %w", d.name, err)
+	}
+
+	err = d.updateLink(link)
+	if err != nil {
+		return fmt.Errorf("failed to update link config %s: %w", d.name, err)
+	}
+
+	return nil
+}
+
+func (d *Driver) GetConfig() (*abbotgopb.HostNetworkInterface, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	return d.config.castToHostNetworkInterface(d.name)
 }
 
 func (d *Driver) Ensure(up bool) error {

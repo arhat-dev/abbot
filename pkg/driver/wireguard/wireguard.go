@@ -6,8 +6,13 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net"
+	"reflect"
 	"strings"
 	"sync"
+
+	"arhat.dev/abbot-proto/abbotgopb"
+
+	"arhat.dev/abbot/pkg/constant"
 
 	"golang.zx2c4.com/wireguard/device"
 	"golang.zx2c4.com/wireguard/wgctrl"
@@ -19,22 +24,32 @@ import (
 	"arhat.dev/abbot/pkg/wrap/netlink"
 )
 
-const (
-	DriverName = "wireguard"
-)
-
 func init() {
-	driver.Register(DriverName, "darwin", NewDriver, NewConfig)
-	driver.Register(DriverName, "freebsd", NewDriver, NewConfig)
-	driver.Register(DriverName, "openbsd", NewDriver, NewConfig)
-	driver.Register(DriverName, "windows", NewDriver, NewConfig)
-	driver.Register(DriverName, "linux", NewDriver, NewConfig)
+	driver.Register(constant.DriverWireguard, "darwin", NewDriver, NewConfig)
+	driver.Register(constant.DriverWireguard, "freebsd", NewDriver, NewConfig)
+	driver.Register(constant.DriverWireguard, "openbsd", NewDriver, NewConfig)
+	driver.Register(constant.DriverWireguard, "windows", NewDriver, NewConfig)
+	driver.Register(constant.DriverWireguard, "linux", NewDriver, NewConfig)
 }
 
 func NewDriver(ctx context.Context, cfg interface{}) (types.Driver, error) {
-	config, ok := cfg.(*Config)
-	if !ok {
-		return nil, fmt.Errorf("invalid non wireguard driver config")
+	var config *Config
+	switch c := cfg.(type) {
+	case *Config:
+		config = c
+	case *abbotgopb.HostNetworkInterface:
+		if c.Metadata == nil {
+			return nil, fmt.Errorf("no metadata provided")
+		}
+		if c.GetWireguard() == nil {
+			return nil, fmt.Errorf("invalid non wireguard config")
+		}
+		config = &Config{
+			NetworkInterface: *c.Metadata,
+			DriverWireguard:  *c.GetWireguard(),
+		}
+	default:
+		return nil, fmt.Errorf("unknown wireguard config type: %s", reflect.TypeOf(cfg).String())
 	}
 
 	ips, err := util.ParseIPs(config.Addresses)
@@ -89,6 +104,10 @@ type Driver struct {
 	mu *sync.Mutex
 }
 
+func (d *Driver) DriverName() string {
+	return constant.DriverWireguard
+}
+
 func (d *Driver) Name() string {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -115,6 +134,42 @@ func (d *Driver) ensureEveryThing() error {
 	}
 
 	return nil
+}
+
+func (d *Driver) EnsureConfig(config *abbotgopb.HostNetworkInterface) error {
+	if config.Metadata == nil {
+		return fmt.Errorf("no metadata provided")
+	}
+
+	if config.GetWireguard() == nil {
+		return fmt.Errorf("not a wireguard interface")
+	}
+
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	d.config = &Config{
+		NetworkInterface: *config.Metadata,
+		DriverWireguard:  *config.GetWireguard(),
+	}
+	var err error
+	d.wgCfg, err = d.config.GetWireGuardConfig()
+	if err != nil {
+		return fmt.Errorf("failed to generate wireguard interface config: %w", err)
+	}
+
+	if d.dev != nil {
+		return d.ensureEveryThing()
+	}
+
+	return d.ensureDeviceConfig()
+}
+
+func (d *Driver) GetConfig() (*abbotgopb.HostNetworkInterface, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	return d.config.castToHostNetworkInterface(d.name)
 }
 
 func (d *Driver) Ensure(up bool) (err error) {

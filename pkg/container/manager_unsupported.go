@@ -14,7 +14,7 @@ import (
 func NewManager(
 	_ context.Context,
 	_ *conf.ContainerNetworkConfig,
-) (abbotgopb.NetworkManagerServer, error) {
+) (*Manager, error) {
 	return &Manager{}, nil
 }
 

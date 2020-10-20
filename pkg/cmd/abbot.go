@@ -126,26 +126,31 @@ func run(ctx context.Context, config *conf.AbbotConfig) error {
 
 		defer func() {
 			netMgrServer.Stop()
-			l.Close()
+			_ = l.Close()
 			if u.Scheme == "unix" {
 				_ = os.Remove(addr)
 			}
 		}()
 	}
 
+	var containerMgr *container.Manager
 	if netMgrServer != nil {
-		// container manager only accepts dynamic config, thus control endpoint is required
-		containerMgr, err := container.NewManager(ctx, &config.ContainerNetwork)
+		// container manager only accepts dynamic config, thus only create it when
+		// control endpoint is set
+		var err error
+		containerMgr, err = container.NewManager(ctx, &config.ContainerNetwork)
 		if err != nil {
 			return err
 		}
-
-		abbotgopb.RegisterNetworkManagerServer(netMgrServer, containerMgr)
 	}
 
-	hostMgr, err := host.NewManager(ctx, &config.HostNetwork)
+	hostMgr, err := host.NewManager(ctx, &config.HostNetwork, containerMgr)
 	if err != nil {
 		return err
+	}
+
+	if netMgrServer != nil {
+		abbotgopb.RegisterNetworkManagerServer(netMgrServer, hostMgr)
 	}
 
 	go func() {

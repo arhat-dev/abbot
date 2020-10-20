@@ -38,6 +38,30 @@ type Config struct {
 	abbotgopb.DriverWireguard  `json:",inline" yaml:",inline"`
 }
 
+func (c *Config) castToHostNetworkInterface(name string) (*abbotgopb.HostNetworkInterface, error) {
+	metadataBytes, err := c.NetworkInterface.Marshal()
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal network metadata: %w", err)
+	}
+
+	configBytes, err := c.DriverWireguard.Marshal()
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal wireguard config: %w", err)
+	}
+
+	md := new(abbotgopb.NetworkInterface)
+	_ = md.Unmarshal(metadataBytes)
+	cfg := new(abbotgopb.DriverWireguard)
+	_ = cfg.Unmarshal(configBytes)
+
+	md.Name = name
+
+	return &abbotgopb.HostNetworkInterface{
+		Metadata: md,
+		Config:   &abbotgopb.HostNetworkInterface_Wireguard{Wireguard: cfg},
+	}, nil
+}
+
 func decodeKey(data, kind, target string) (wgtypes.Key, error) {
 	k, err := wgtypes.ParseKey(data)
 	if err != nil {

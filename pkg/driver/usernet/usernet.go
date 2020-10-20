@@ -3,7 +3,12 @@ package usernet
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"sync"
+
+	"arhat.dev/abbot-proto/abbotgopb"
+
+	"arhat.dev/abbot/pkg/constant"
 
 	"arhat.dev/pkg/log"
 	"gvisor.dev/gvisor/pkg/tcpip"
@@ -18,26 +23,38 @@ import (
 	"arhat.dev/abbot/pkg/types"
 )
 
-const (
-	DriverName = "usernet"
-)
-
 func init() {
-	driver.Register(DriverName, "aix", NewDriver, NewConfig)
-	driver.Register(DriverName, "dragonfly", NewDriver, NewConfig)
-	driver.Register(DriverName, "darwin", NewDriver, NewConfig)
-	driver.Register(DriverName, "freebsd", NewDriver, NewConfig)
-	driver.Register(DriverName, "openbsd", NewDriver, NewConfig)
-	driver.Register(DriverName, "solaris", NewDriver, NewConfig)
-	driver.Register(DriverName, "netbsd", NewDriver, NewConfig)
-	driver.Register(DriverName, "windows", NewDriver, NewConfig)
-	driver.Register(DriverName, "linux", NewDriver, NewConfig)
+	driver.Register(constant.DriverUsernet, "aix", NewDriver, NewConfig)
+	driver.Register(constant.DriverUsernet, "dragonfly", NewDriver, NewConfig)
+	driver.Register(constant.DriverUsernet, "darwin", NewDriver, NewConfig)
+	driver.Register(constant.DriverUsernet, "freebsd", NewDriver, NewConfig)
+	driver.Register(constant.DriverUsernet, "openbsd", NewDriver, NewConfig)
+	driver.Register(constant.DriverUsernet, "solaris", NewDriver, NewConfig)
+	driver.Register(constant.DriverUsernet, "netbsd", NewDriver, NewConfig)
+	driver.Register(constant.DriverUsernet, "windows", NewDriver, NewConfig)
+	driver.Register(constant.DriverUsernet, "linux", NewDriver, NewConfig)
 }
 
 func NewDriver(ctx context.Context, cfg interface{}) (types.Driver, error) {
-	config, ok := cfg.(*Config)
-	if !ok {
-		return nil, fmt.Errorf("invalid non usernet driver config")
+	var config *Config
+	switch c := cfg.(type) {
+	case *Config:
+		config = c
+	case *abbotgopb.HostNetworkInterface:
+		if c.Metadata == nil {
+			return nil, fmt.Errorf("no metadata provided")
+		}
+
+		// TODO: support usernet in abbot-proto
+		//if c.GetWireguard() == nil {
+		//	return nil, fmt.Errorf("invalid non usernet config")
+		//}
+		config = &Config{
+			NetworkInterface: *c.Metadata,
+		}
+		return nil, fmt.Errorf("no abbot proto support for usernet")
+	default:
+		return nil, fmt.Errorf("unknown usernet config type: %s", reflect.TypeOf(cfg).String())
 	}
 
 	var rawFactory stack.RawFactory
@@ -87,8 +104,9 @@ func NewDriver(ctx context.Context, cfg interface{}) (types.Driver, error) {
 		nicID:    nicID,
 		netStack: netStack,
 
-		ep: ep,
-		mu: new(sync.RWMutex),
+		ep:     ep,
+		mu:     new(sync.RWMutex),
+		config: config,
 
 		running: make(chan struct{}),
 	}, nil
@@ -105,10 +123,15 @@ type Driver struct {
 	netStack *stack.Stack
 	ep       *channel.Endpoint
 	mu       *sync.RWMutex
+	config   *Config
 
 	nicID tcpip.NICID
 
 	running chan struct{}
+}
+
+func (d *Driver) DriverName() string {
+	return constant.DriverUsernet
 }
 
 // Name of the interface
@@ -121,6 +144,17 @@ func (d *Driver) runningCh() <-chan struct{} {
 	defer d.mu.RUnlock()
 
 	return d.running
+}
+
+func (d *Driver) EnsureConfig(config *abbotgopb.HostNetworkInterface) error {
+	return fmt.Errorf("unimplemented")
+}
+
+func (d *Driver) GetConfig() (*abbotgopb.HostNetworkInterface, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	return d.config.castToHostNetworkInterface(d.name)
 }
 
 // Ensure up/down state of this interface

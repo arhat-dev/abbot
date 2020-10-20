@@ -19,3 +19,9 @@ package constant
 const (
 	AbbotChain = "ABBOT-CHAIN"
 )
+
+const (
+	DriverBridge    = "bridge"
+	DriverWireguard = "wireguard"
+	DriverUsernet   = "usernet"
+)

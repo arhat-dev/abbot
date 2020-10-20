@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"arhat.dev/abbot-proto/abbotgopb"
-
 	"gvisor.dev/gvisor/pkg/tcpip"
 	"gvisor.dev/gvisor/pkg/tcpip/header"
 	"gvisor.dev/gvisor/pkg/tcpip/link/channel"
@@ -86,6 +85,30 @@ type Config struct {
 	ProtocolStack              StackConfig   `json:"protocolStack" yaml:"protocolStack"`
 }
 
+func (c *Config) castToHostNetworkInterface(name string) (*abbotgopb.HostNetworkInterface, error) {
+	metadataBytes, err := c.NetworkInterface.Marshal()
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal network metadata: %w", err)
+	}
+
+	//configBytes, err := c.DriverWireguard.Marshal()
+	//if err != nil {
+	//	return nil, fmt.Errorf("failed to marshal wireguard config: %w", err)
+	//}
+
+	md := new(abbotgopb.NetworkInterface)
+	_ = md.Unmarshal(metadataBytes)
+	//cfg := new(abbotgopb.DriverWireguard)
+	//_ = cfg.Unmarshal(configBytes)
+
+	md.Name = name
+
+	return &abbotgopb.HostNetworkInterface{
+		Metadata: md,
+		Config:   &abbotgopb.HostNetworkInterface_Unknown{},
+	}, nil
+}
+
 type OverlayConfig struct {
 	MQTT *MQTTOverlayConfig `json:"mqtt" yaml:"mqtt"`
 }
@@ -97,44 +120,44 @@ type StackConfig struct {
 	Protocols StackProtocols `json:"protocols" yaml:"protocols"`
 }
 
-func (s Config) resolveNetworks() []stack.NetworkProtocolFactory {
+func (c Config) resolveNetworks() []stack.NetworkProtocolFactory {
 	var ret []stack.NetworkProtocolFactory
-	if s.ProtocolStack.Networks.ARP.Enabled {
+	if c.ProtocolStack.Networks.ARP.Enabled {
 		ret = append(ret, arp.NewProtocol)
 	}
-	if s.ProtocolStack.Networks.IPv4.Enabled {
+	if c.ProtocolStack.Networks.IPv4.Enabled {
 		ret = append(ret, ipv4.NewProtocol)
 	}
 
-	if s.ProtocolStack.Networks.IPv6.Enabled {
+	if c.ProtocolStack.Networks.IPv6.Enabled {
 		ret = append(ret, ipv6.NewProtocol)
 	}
 
 	return ret
 }
 
-func (s Config) configureNetworks(
+func (c Config) configureNetworks(
 	ctx context.Context, netStack *stack.Stack,
 ) (tcpip.NICID, *channel.Endpoint, error) {
-	err := s.ProtocolStack.Networks.ARP.configure(netStack)
+	err := c.ProtocolStack.Networks.ARP.configure(netStack)
 	if err != nil {
 		return 0, nil, fmt.Errorf("failed to configure arp network: %w", err)
 	}
 
-	err = s.ProtocolStack.Networks.IPv4.configure(netStack)
+	err = c.ProtocolStack.Networks.IPv4.configure(netStack)
 	if err != nil {
 		return 0, nil, fmt.Errorf("failed to configure ipv4 network: %w", err)
 	}
 
-	err = s.ProtocolStack.Networks.IPv6.configure(netStack)
+	err = c.ProtocolStack.Networks.IPv6.configure(netStack)
 	if err != nil {
 		return 0, nil, fmt.Errorf("failed to configure ipv6 network: %w", err)
 	}
 
-	nicID := tcpip.NICID(crc32.ChecksumIEEE([]byte(s.Name)))
+	nicID := tcpip.NICID(crc32.ChecksumIEEE([]byte(c.Name)))
 
 	var hwAddr tcpip.LinkAddress
-	if s.HardwareAddress == "" {
+	if c.HardwareAddress == "" {
 		buf := make([]byte, 6)
 		_, err = rand.Read(buf)
 		if err != nil {
@@ -146,33 +169,33 @@ func (s Config) configureNetworks(
 		hwAddr = tcpip.LinkAddress(buf)
 	} else {
 		var err2 error
-		hwAddr, err2 = tcpip.ParseMACAddress(s.HardwareAddress)
+		hwAddr, err2 = tcpip.ParseMACAddress(c.HardwareAddress)
 		if err2 != nil {
 			return 0, nil, fmt.Errorf("failed to parse hardware address: %w", err2)
 		}
 	}
 
-	mtu := uint32(s.Mtu)
+	mtu := uint32(c.Mtu)
 	if mtu == 0 {
 		mtu = 65536
 	}
 
-	chSize := s.ProtocolStack.ChannelSize
+	chSize := c.ProtocolStack.ChannelSize
 	if chSize == 0 {
 		chSize = 256
 	}
 
 	ep := channel.New(chSize, mtu, hwAddr)
 	err2 := netStack.CreateNICWithOptions(nicID, ep, stack.NICOptions{
-		Name:     s.Name,
+		Name:     c.Name,
 		Disabled: false,
 		Context:  ctx,
 	})
 	if err2 != nil {
-		return 0, nil, fmt.Errorf("failed to create nic %s: %s", s.Name, err2.String())
+		return 0, nil, fmt.Errorf("failed to create nic %s: %s", c.Name, err2.String())
 	}
 
-	addresses, err := util.ParseIPs(s.Addresses)
+	addresses, err := util.ParseIPs(c.Addresses)
 	if err != nil {
 		return 0, nil, fmt.Errorf("failed to parse ips: %w", err)
 	}
@@ -184,11 +207,11 @@ func (s Config) configureNetworks(
 			err2 = netStack.AddAddress(nicID, ipv4.ProtocolNumber, tcpip.Address(addr.IP))
 		}
 		if err2 != nil {
-			return 0, nil, fmt.Errorf("failed to address %s to nic %s: %s", addr.String(), s.Name, err2.String())
+			return 0, nil, fmt.Errorf("failed to address %s to nic %s: %s", addr.String(), c.Name, err2.String())
 		}
 	}
 
-	if s.ProtocolStack.Networks.ARP.Enabled {
+	if c.ProtocolStack.Networks.ARP.Enabled {
 		err2 = netStack.AddAddress(nicID, arp.ProtocolNumber, arp.ProtocolAddress)
 		if err2 != nil {
 			return 0, nil, fmt.Errorf("failed to add arp address: %s", err2.String())
@@ -196,14 +219,14 @@ func (s Config) configureNetworks(
 	}
 
 	var routes []tcpip.Route
-	if s.ProtocolStack.Networks.IPv4.Enabled {
+	if c.ProtocolStack.Networks.IPv4.Enabled {
 		routes = append(routes, tcpip.Route{
 			Destination: header.IPv4EmptySubnet,
 			NIC:         nicID,
 		})
 	}
 
-	if s.ProtocolStack.Networks.IPv6.Enabled {
+	if c.ProtocolStack.Networks.IPv6.Enabled {
 		routes = append(routes, tcpip.Route{
 			Destination: header.IPv6EmptySubnet,
 			NIC:         nicID,
@@ -215,21 +238,21 @@ func (s Config) configureNetworks(
 	return nicID, ep, nil
 }
 
-func (s Config) resolveProtocols() []stack.TransportProtocolFactory {
+func (c Config) resolveProtocols() []stack.TransportProtocolFactory {
 	var ret []stack.TransportProtocolFactory
-	if s.ProtocolStack.Protocols.TCP.Enabled {
+	if c.ProtocolStack.Protocols.TCP.Enabled {
 		ret = append(ret, tcp.NewProtocol)
 	}
-	if s.ProtocolStack.Protocols.UDP.Enabled {
+	if c.ProtocolStack.Protocols.UDP.Enabled {
 		ret = append(ret, udp.NewProtocol)
 	}
 
-	if s.ProtocolStack.Protocols.ICMP.Enabled {
-		if s.ProtocolStack.Networks.IPv4.Enabled {
+	if c.ProtocolStack.Protocols.ICMP.Enabled {
+		if c.ProtocolStack.Networks.IPv4.Enabled {
 			ret = append(ret, icmp.NewProtocol4)
 		}
 
-		if s.ProtocolStack.Networks.IPv6.Enabled {
+		if c.ProtocolStack.Networks.IPv6.Enabled {
 			ret = append(ret, icmp.NewProtocol6)
 		}
 	}
@@ -237,23 +260,23 @@ func (s Config) resolveProtocols() []stack.TransportProtocolFactory {
 	return ret
 }
 
-func (s StackConfig) configureProtocols(netStack *stack.Stack) error {
-	err := s.Protocols.Raw.configure(netStack)
+func (c StackConfig) configureProtocols(netStack *stack.Stack) error {
+	err := c.Protocols.Raw.configure(netStack)
 	if err != nil {
 		return err
 	}
 
-	err = s.Protocols.ICMP.configure(netStack)
+	err = c.Protocols.ICMP.configure(netStack)
 	if err != nil {
 		return err
 	}
 
-	err = s.Protocols.TCP.configure(netStack)
+	err = c.Protocols.TCP.configure(netStack)
 	if err != nil {
 		return err
 	}
 
-	err = s.Protocols.UDP.configure(netStack)
+	err = c.Protocols.UDP.configure(netStack)
 	if err != nil {
 		return err
 	}
@@ -272,8 +295,8 @@ type StackARPConfig struct {
 }
 
 // nolint:unparam
-func (s StackARPConfig) configure(netStack *stack.Stack) error {
-	if !s.Enabled {
+func (c StackARPConfig) configure(netStack *stack.Stack) error {
+	if !c.Enabled {
 		return nil
 	}
 
@@ -290,8 +313,8 @@ type StackIPv4Config struct {
 	Enabled bool `json:"enabled" yaml:"enabled"`
 }
 
-func (s StackIPv4Config) configure(netStack *stack.Stack) error {
-	if !s.Enabled {
+func (c StackIPv4Config) configure(netStack *stack.Stack) error {
+	if !c.Enabled {
 		return nil
 	}
 
@@ -306,8 +329,8 @@ type StackIPv6Config struct {
 	Enabled bool `json:"enabled" yaml:"enabled"`
 }
 
-func (s StackIPv6Config) configure(netStack *stack.Stack) error {
-	if !s.Enabled {
+func (c StackIPv6Config) configure(netStack *stack.Stack) error {
+	if !c.Enabled {
 		return nil
 	}
 
@@ -337,8 +360,8 @@ type StackRawConfig struct {
 	Enabled bool `json:"enabled" yaml:"enabled"`
 }
 
-func (s StackRawConfig) configure(netStack *stack.Stack) error {
-	if !s.Enabled {
+func (c StackRawConfig) configure(netStack *stack.Stack) error {
+	if !c.Enabled {
 		return nil
 	}
 
@@ -350,8 +373,8 @@ type StackICMPConfig struct {
 	Enabled bool `json:"enabled" yaml:"enabled"`
 }
 
-func (s StackICMPConfig) configure(netStack *stack.Stack) error {
-	if !s.Enabled {
+func (c StackICMPConfig) configure(netStack *stack.Stack) error {
+	if !c.Enabled {
 		return nil
 	}
 
@@ -370,8 +393,8 @@ type StackTCPConfig struct {
 	Buffer SendRecvBufferConfig `json:"buffer" yaml:"buffer"`
 }
 
-func (s StackTCPConfig) configure(netStack *stack.Stack) error {
-	if !s.Enabled {
+func (c StackTCPConfig) configure(netStack *stack.Stack) error {
+	if !c.Enabled {
 		return nil
 	}
 
@@ -382,18 +405,18 @@ func (s StackTCPConfig) configure(netStack *stack.Stack) error {
 		return fmt.Errorf("failed to configure moderate recv buf: %s", err.String())
 	}
 
-	err = netStack.SetTransportProtocolOption(tcp.ProtocolNumber, s.Buffer.Recv.resolveTCPRecvBufOption())
+	err = netStack.SetTransportProtocolOption(tcp.ProtocolNumber, c.Buffer.Recv.resolveTCPRecvBufOption())
 	if err != nil {
 		return fmt.Errorf("failed to configure recv buf: %s", err.String())
 	}
 
-	err = netStack.SetTransportProtocolOption(tcp.ProtocolNumber, s.Buffer.Send.resolveTCPSendBufOption())
+	err = netStack.SetTransportProtocolOption(tcp.ProtocolNumber, c.Buffer.Send.resolveTCPSendBufOption())
 	if err != nil {
 		return fmt.Errorf("failed to configure send buf: %s", err.String())
 	}
 
 	tcpSACK := tcpip.TCPSACKEnabled(true)
-	if !s.SAck {
+	if !c.SAck {
 		tcpSACK = false
 	}
 	err = netStack.SetTransportProtocolOption(tcp.ProtocolNumber, &tcpSACK)
@@ -402,7 +425,7 @@ func (s StackTCPConfig) configure(netStack *stack.Stack) error {
 	}
 
 	tcpDelay := tcpip.TCPDelayEnabled(false)
-	if !s.NoDelay {
+	if !c.NoDelay {
 		tcpDelay = true
 	}
 	err = netStack.SetTransportProtocolOption(tcp.ProtocolNumber, &tcpDelay)
@@ -410,16 +433,16 @@ func (s StackTCPConfig) configure(netStack *stack.Stack) error {
 		return fmt.Errorf("failed to configure tcp nodelay: %s", err.String())
 	}
 
-	if s.Linger != 0 {
-		tcpLinger := tcpip.TCPLingerTimeoutOption(s.Linger)
+	if c.Linger != 0 {
+		tcpLinger := tcpip.TCPLingerTimeoutOption(c.Linger)
 		err = netStack.SetTransportProtocolOption(tcp.ProtocolNumber, &tcpLinger)
 		if err != nil {
 			return fmt.Errorf("failed to configure tcp linger: %s", err.String())
 		}
 	}
 
-	if len(s.CongestionControlAlgorithms) != 0 {
-		ccAlgos := tcpip.TCPAvailableCongestionControlOption(strings.Join(s.CongestionControlAlgorithms, " "))
+	if len(c.CongestionControlAlgorithms) != 0 {
+		ccAlgos := tcpip.TCPAvailableCongestionControlOption(strings.Join(c.CongestionControlAlgorithms, " "))
 		err = netStack.SetTransportProtocolOption(tcp.ProtocolNumber, &ccAlgos)
 		if err != nil {
 			return fmt.Errorf("failed to configure tcp congestion control algorithms: %s", err.String())
@@ -433,8 +456,8 @@ type StackUDPConfig struct {
 	Enabled bool `json:"enabled" yaml:"enabled"`
 }
 
-func (s StackUDPConfig) configure(netStack *stack.Stack) error {
-	if !s.Enabled {
+func (c StackUDPConfig) configure(netStack *stack.Stack) error {
+	if !c.Enabled {
 		return nil
 	}
 
