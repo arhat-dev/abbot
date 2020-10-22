@@ -11,6 +11,8 @@ func NewRequest(req proto.Marshaler) (*Request, error) {
 	switch req.(type) {
 	case *ContainerNetworkEnsureRequest:
 		kind = REQ_ENSURE_CTR_NETWORK
+	case *ContainerNetworkConfigQueryRequest:
+		kind = REQ_QUERY_CTR_NETWORK_CONFIG
 	case *ContainerNetworkRestoreRequest:
 		kind = REQ_RESTORE_CTR_NETWORK
 	case *ContainerNetworkQueryRequest:
@@ -21,6 +23,8 @@ func NewRequest(req proto.Marshaler) (*Request, error) {
 		kind = REQ_ENSURE_CTR_NETWORK_CONFIG
 	case *HostNetworkConfigEnsureRequest:
 		kind = REQ_ENSURE_HOST_NETWORK_CONFIG
+	case *HostNetworkConfigQueryRequest:
+		kind = REQ_QUERY_HOST_NETWORK_CONFIG
 	default:
 		return nil, fmt.Errorf("unkonw request type")
 	}
@@ -48,6 +52,10 @@ func NewContainerNetworkEnsureRequest(
 		CapArgs:     capArgs,
 		CniArgs:     cniArgs,
 	}
+}
+
+func NewContainerNetworkConfigQueryRequest() *ContainerNetworkConfigQueryRequest {
+	return &ContainerNetworkConfigQueryRequest{}
 }
 
 func NewContainerNetworkRestoreRequest(
@@ -89,5 +97,13 @@ func NewHostNetworkConfigEnsureRequest(
 ) *HostNetworkConfigEnsureRequest {
 	return &HostNetworkConfigEnsureRequest{
 		Expected: interfaces,
+	}
+}
+
+func NewHostNetworkConfigQueryRequest(
+	providers ...string,
+) *HostNetworkConfigQueryRequest {
+	return &HostNetworkConfigQueryRequest{
+		Providers: providers,
 	}
 }

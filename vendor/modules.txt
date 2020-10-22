@@ -1,4 +1,4 @@
-# arhat.dev/abbot-proto v0.0.0-20201020114139-a23155b11f8d
+# arhat.dev/abbot-proto v0.1.0
 ## explicit
 arhat.dev/abbot-proto/abbotgopb
 # arhat.dev/pkg v0.0.0-20201011023427-3d85bac95f31
@@ -267,7 +267,7 @@ google.golang.org/appengine/urlfetch
 google.golang.org/genproto/googleapis/api/httpbody
 google.golang.org/genproto/googleapis/rpc/status
 google.golang.org/genproto/protobuf/field_mask
-# google.golang.org/grpc v1.32.0
+# google.golang.org/grpc v1.33.1
 ## explicit
 google.golang.org/grpc
 google.golang.org/grpc/attributes

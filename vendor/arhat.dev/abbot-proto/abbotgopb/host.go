@@ -1,10 +1,8 @@
 package abbotgopb
 
 func NewHostNetworkInterface(
-	name string,
-	mtu int32,
-	hardwareAddress string,
-	addresses []string,
+	provider string,
+	metadata *NetworkInterface,
 	config interface{},
 ) *HostNetworkInterface {
 	var cfg isHostNetworkInterface_Config
@@ -24,12 +22,8 @@ func NewHostNetworkInterface(
 	}
 
 	return &HostNetworkInterface{
-		Metadata: &NetworkInterface{
-			Name:            name,
-			Mtu:             mtu,
-			HardwareAddress: hardwareAddress,
-			Addresses:       addresses,
-		},
-		Config: cfg,
+		Metadata: metadata,
+		Provider: provider,
+		Config:   cfg,
 	}
 }
