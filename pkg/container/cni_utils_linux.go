@@ -46,16 +46,16 @@ func (m *Manager) getContainerNetworkConfigFile(containerID string) string {
 }
 
 func (m *Manager) cacheCNINetworkConfig(c *libcni.NetworkConfigList, configBytes []byte) {
-	m.cniMU.Lock()
-	defer m.cniMU.Unlock()
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
 	m.cniNetworkConfig = c
 	m.cniNetworkConfigBytes = configBytes
 }
 
 func (m *Manager) getCachedCNINetworkConfig() (*libcni.NetworkConfigList, []byte) {
-	m.cniMU.RLock()
-	defer m.cniMU.RUnlock()
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 
 	return m.cniNetworkConfig, m.cniNetworkConfigBytes
 }

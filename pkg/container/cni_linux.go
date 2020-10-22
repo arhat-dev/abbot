@@ -17,8 +17,40 @@ import (
 )
 
 type ConfigTemplateVariables struct {
-	IPv4Subnet string
-	IPv6Subnet string
+	IPv4Subnet string `json:"ipv4_subnet"`
+	IPv6Subnet string `json:"ipv6_subnet"`
+}
+
+func (m *Manager) handleContainerNetworkConfigQueryReq(
+	ctx context.Context, data []byte,
+) (*abbotgopb.ContainerNetworkConfigResponse, error) {
+	_ = ctx
+
+	req := new(abbotgopb.ContainerNetworkConfigQueryRequest)
+	err := req.Unmarshal(data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal ContainerNetworkConfigQueryRequest: %w", err)
+	}
+
+	varBytes, err := ioutil.ReadFile(m.templateConfigFile)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return &abbotgopb.ContainerNetworkConfigResponse{}, nil
+		}
+
+		return nil, fmt.Errorf("failed to read container network config: %w", err)
+	}
+
+	v := new(ConfigTemplateVariables)
+	err = json.Unmarshal(varBytes, v)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve container network config: %w", err)
+	}
+
+	return &abbotgopb.ContainerNetworkConfigResponse{
+		Ipv4Subnet: v.IPv4Subnet,
+		Ipv6Subnet: v.IPv6Subnet,
+	}, nil
 }
 
 func (m *Manager) handleContainerNetworkConfigEnsureReq(
@@ -33,10 +65,22 @@ func (m *Manager) handleContainerNetworkConfigEnsureReq(
 	}
 
 	buf := new(bytes.Buffer)
-	err = m.cniConfigTemplate.Execute(buf, &ConfigTemplateVariables{
+	v := &ConfigTemplateVariables{
 		IPv4Subnet: req.Ipv4Subnet,
 		IPv6Subnet: req.Ipv6Subnet,
-	})
+	}
+
+	varBytes, err := json.Marshal(v)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal template variables: %w", err)
+	}
+
+	err = ioutil.WriteFile(m.templateConfigFile, varBytes, 0640)
+	if err != nil {
+		return nil, fmt.Errorf("failed to save template variables: %w", err)
+	}
+
+	err = m.cniConfigTemplate.Execute(buf, v)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute cni config template")
 	}
@@ -56,6 +100,7 @@ func (m *Manager) handleContainerNetworkConfigEnsureReq(
 
 	m.cacheCNINetworkConfig(cniNetworkConfig, cniNetworkConfigBytes)
 
+	// refresh all container networks
 	containerNetworks := make(map[string]*abbotgopb.ContainerNetworkStatusResponse)
 	_ = filepath.Walk(m.cniDataDir, func(path string, info os.FileInfo, err2 error) error {
 		if info.IsDir() && path != m.cniDataDir {

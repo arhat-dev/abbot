@@ -3,6 +3,9 @@ package types
 import "arhat.dev/abbot-proto/abbotgopb"
 
 type Driver interface {
+	// Provider of the interface, `static` means from config file
+	Provider() string
+
 	// DriverName of the interface
 	DriverName() string
 

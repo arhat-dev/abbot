@@ -45,7 +45,7 @@ func (c *Config) GetLinkAttrs(name string) netlink.LinkAttrs {
 	return ret
 }
 
-func NewDriver(ctx context.Context, cfg interface{}) (types.Driver, error) {
+func NewDriver(ctx context.Context, provider string, cfg interface{}) (types.Driver, error) {
 	var config *Config
 	switch c := cfg.(type) {
 	case *Config:
@@ -71,8 +71,10 @@ func NewDriver(ctx context.Context, cfg interface{}) (types.Driver, error) {
 	}
 
 	return &Driver{
-		ctx:  ctx,
-		name: config.Name,
+		ctx: ctx,
+
+		provider: provider,
+		name:     config.Name,
 
 		h: &netlink.Handle{},
 
@@ -83,8 +85,10 @@ func NewDriver(ctx context.Context, cfg interface{}) (types.Driver, error) {
 }
 
 type Driver struct {
-	ctx  context.Context
-	name string
+	ctx context.Context
+
+	provider string
+	name     string
 
 	h *netlink.Handle
 

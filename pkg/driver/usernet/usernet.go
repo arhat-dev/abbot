@@ -35,7 +35,7 @@ func init() {
 	driver.Register(constant.DriverUsernet, "linux", NewDriver, NewConfig)
 }
 
-func NewDriver(ctx context.Context, cfg interface{}) (types.Driver, error) {
+func NewDriver(ctx context.Context, provider string, cfg interface{}) (types.Driver, error) {
 	var config *Config
 	switch c := cfg.(type) {
 	case *Config:
@@ -94,9 +94,11 @@ func NewDriver(ctx context.Context, cfg interface{}) (types.Driver, error) {
 	}
 
 	return &Driver{
-		ctx:    ctx,
-		logger: logger,
-		name:   config.Name,
+		ctx: ctx,
+
+		provider: provider,
+		logger:   logger,
+		name:     config.Name,
 
 		overlay: overlayDriver,
 
@@ -113,9 +115,11 @@ func NewDriver(ctx context.Context, cfg interface{}) (types.Driver, error) {
 }
 
 type Driver struct {
-	ctx    context.Context
-	logger log.Interface
-	name   string
+	ctx context.Context
+
+	provider string
+	logger   log.Interface
+	name     string
 
 	overlay OverlayDriver
 
@@ -128,6 +132,10 @@ type Driver struct {
 	nicID tcpip.NICID
 
 	running chan struct{}
+}
+
+func (d *Driver) Provider() string {
+	return d.provider
 }
 
 func (d *Driver) DriverName() string {

@@ -3,4 +3,5 @@
 package bridge
 
 type Driver struct {
+	provider string
 }

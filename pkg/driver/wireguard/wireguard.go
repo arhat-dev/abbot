@@ -32,7 +32,7 @@ func init() {
 	driver.Register(constant.DriverWireguard, "linux", NewDriver, NewConfig)
 }
 
-func NewDriver(ctx context.Context, cfg interface{}) (types.Driver, error) {
+func NewDriver(ctx context.Context, provider string, cfg interface{}) (types.Driver, error) {
 	var config *Config
 	switch c := cfg.(type) {
 	case *Config:
@@ -73,9 +73,11 @@ func NewDriver(ctx context.Context, cfg interface{}) (types.Driver, error) {
 	}
 
 	return &Driver{
-		ctx:    ctx,
-		name:   config.Name,
-		config: config,
+		ctx: ctx,
+
+		provider: provider,
+		name:     config.Name,
+		config:   config,
 
 		ips:           ips,
 		allAllowedIPs: allowedIPs,
@@ -89,8 +91,9 @@ func NewDriver(ctx context.Context, cfg interface{}) (types.Driver, error) {
 type Driver struct {
 	ctx context.Context
 
-	name   string
-	config *Config
+	provider string
+	name     string
+	config   *Config
 
 	dev  *device.Device
 	uapi net.Listener
@@ -102,6 +105,10 @@ type Driver struct {
 	wgCfg   *wgtypes.Config
 
 	mu *sync.Mutex
+}
+
+func (d *Driver) Provider() string {
+	return d.provider
 }
 
 func (d *Driver) DriverName() string {

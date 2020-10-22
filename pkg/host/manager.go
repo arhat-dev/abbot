@@ -11,6 +11,7 @@ import (
 	"go.uber.org/multierr"
 
 	"arhat.dev/abbot/pkg/conf"
+	"arhat.dev/abbot/pkg/constant"
 	"arhat.dev/abbot/pkg/container"
 	"arhat.dev/abbot/pkg/driver"
 	"arhat.dev/abbot/pkg/types"
@@ -32,7 +33,6 @@ func NewManager(
 	hostNetwork *conf.HostNetworkConfig,
 	containerMgr *container.Manager,
 ) (*Manager, error) {
-
 	var nameSeq []string
 	hostDevices := make(map[string]types.Driver)
 	for _, n := range hostNetwork.Interfaces {
@@ -40,7 +40,7 @@ func NewManager(
 			return nil, fmt.Errorf("invalid duplicate interface name %s", n.Name)
 		}
 
-		d, err := driver.NewDriver(ctx, n.Driver, runtime.GOOS, n.DriverConfig)
+		d, err := driver.NewDriver(ctx, constant.ProviderStatic, n.Driver, runtime.GOOS, n.DriverConfig)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create driver %s for %s: %w", n.Driver, n.Name, err)
 		}

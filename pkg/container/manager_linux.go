@@ -23,12 +23,13 @@ func NewManager(ctx context.Context, containerNetwork *conf.ContainerNetworkConf
 		return nil, fmt.Errorf("failed to parse cni config template: %w", err)
 	}
 
-	cndDataDir, err := filepath.Abs(containerNetwork.DataDir)
+	cniDataDir, err := filepath.Abs(containerNetwork.DataDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get absolute path of container network data dir: %w", err)
 	}
 
-	cniConfigFile := filepath.Join(cndDataDir, "config.json")
+	cniConfigFile := filepath.Join(cniDataDir, "config.json")
+	templateConfigFile := filepath.Join(cniDataDir, "template-config.json")
 
 	var (
 		cniNetworkConfig      *libcni.NetworkConfigList
@@ -68,12 +69,13 @@ func NewManager(ctx context.Context, containerNetwork *conf.ContainerNetworkConf
 		ctx:    ctx,
 		logger: log.Log.WithName("cni"),
 
-		containerDev:      containerNetwork.ContainerInterfaceName,
-		cniDataDir:        cndDataDir,
-		cniConfigFile:     cniConfigFile,
-		cniLookupPaths:    containerNetwork.CNIPluginsLookupPaths,
-		cniConfigTemplate: tmpl,
-		cniMU:             new(sync.RWMutex),
+		containerDev:       containerNetwork.ContainerInterfaceName,
+		cniDataDir:         cniDataDir,
+		cniConfigFile:      cniConfigFile,
+		templateConfigFile: templateConfigFile,
+		cniLookupPaths:     containerNetwork.CNIPluginsLookupPaths,
+		cniConfigTemplate:  tmpl,
+		mu:                 new(sync.RWMutex),
 
 		cniLoopbackConfig:     loopbackConfig,
 		cniNetworkConfigBytes: cniNetworkConfigBytes,
@@ -85,12 +87,13 @@ type Manager struct {
 	ctx    context.Context
 	logger log.Interface
 
-	containerDev      string
-	cniDataDir        string
-	cniConfigFile     string
-	cniLookupPaths    []string
-	cniConfigTemplate *template.Template
-	cniMU             *sync.RWMutex
+	containerDev       string
+	cniDataDir         string
+	cniConfigFile      string
+	templateConfigFile string
+	cniLookupPaths     []string
+	cniConfigTemplate  *template.Template
+	mu                 *sync.RWMutex
 
 	cniLoopbackConfig     *libcni.NetworkConfigList
 	cniNetworkConfigBytes []byte
@@ -109,11 +112,14 @@ func (m *Manager) Process(ctx context.Context, req *abbotgopb.Request) (resp *ab
 	var (
 		statusList *abbotgopb.ContainerNetworkStatusListResponse
 		status     *abbotgopb.ContainerNetworkStatusResponse
+		config     *abbotgopb.ContainerNetworkConfigResponse
 	)
 
 	switch req.Kind {
 	case abbotgopb.REQ_ENSURE_CTR_NETWORK_CONFIG:
 		statusList, err = m.handleContainerNetworkConfigEnsureReq(ctx, req.Body)
+	case abbotgopb.REQ_QUERY_CTR_NETWORK_CONFIG:
+		config, err = m.handleContainerNetworkConfigQueryReq(ctx, req.Body)
 	case abbotgopb.REQ_ENSURE_CTR_NETWORK:
 		status, err = m.handleContainerNetworkEnsureReq(ctx, req.Body)
 	case abbotgopb.REQ_RESTORE_CTR_NETWORK:
@@ -134,6 +140,8 @@ func (m *Manager) Process(ctx context.Context, req *abbotgopb.Request) (resp *ab
 		return abbotgopb.NewResponse(statusList)
 	case status != nil:
 		return abbotgopb.NewResponse(status)
+	case config != nil:
+		return abbotgopb.NewResponse(config)
 	default:
 		return abbotgopb.NewResponse(nil)
 	}

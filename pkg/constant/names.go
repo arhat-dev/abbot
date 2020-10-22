@@ -25,3 +25,7 @@ const (
 	DriverWireguard = "wireguard"
 	DriverUsernet   = "usernet"
 )
+
+const (
+	ProviderStatic = "static"
+)
