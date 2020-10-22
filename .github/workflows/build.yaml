@@ -188,6 +188,12 @@ jobs:
       run: |
         echo "::set-output name=tag::$(echo ${GITHUB_REF#refs/tags/})"
 
+    - name: Build changelog
+      id: build_changelog
+      uses: mikepenz/release-changelog-builder-action@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
@@ -217,6 +223,10 @@ jobs:
           - Foo ...
           - Bar ...
 
+          ## Changes since `${{ steps.build_changelog.outputs.fromTag }}`
+
+          ${{ steps.build_changelog.outputs.changelog }}
+
           ## Images
 
           - `docker.io/arhatdev/abbot:${{ steps.extract_tag.outputs.tag }}`
@@ -225,7 +235,7 @@ jobs:
           ## Helm Charts
 
           - Have a look at [ArtifactHub](https://artifacthub.io/packages/helm/arhatdev/abbot)
-          - Checkout chart [source code](https://github.com/arhat-dev/abbot/blob/${{ steps.extract_tag.outputs.tag }}/cicd/deploy/charts/abbot)
+          - Checkout [chart source](https://github.com/arhat-dev/abbot/blob/${{ steps.extract_tag.outputs.tag }}/cicd/deploy/charts/abbot)
 
     #
     # checksums
