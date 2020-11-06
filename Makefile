@@ -49,7 +49,7 @@ image.push.windows.all: \
 	image.push.abbot.windows.all
 
 # manifest gen
-include scripts/gen/manifest.mk
+include scripts/gen/manifests.mk
 
 # packaging
 include scripts/package/abbot.mk
