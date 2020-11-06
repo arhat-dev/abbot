@@ -49,7 +49,7 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/goiiot/libmqtt v0.9.6
 	github.com/klauspost/compress v1.11.1 // indirect
-	github.com/spf13/cobra v1.1.0
+	github.com/spf13/cobra v1.1.1
 	github.com/stretchr/testify v1.6.1
 	github.com/vishvananda/netlink v1.1.0
 	github.com/vishvananda/netns v0.0.0-20200728191858-db3c7e526aae
