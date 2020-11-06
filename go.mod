@@ -54,7 +54,7 @@ require (
 	github.com/vishvananda/netlink v1.1.0
 	github.com/vishvananda/netns v0.0.0-20200728191858-db3c7e526aae
 	go.uber.org/multierr v1.6.0
-	golang.org/x/sys db71ae66460a
+	golang.org/x/sys v0.0.0-20201106081118-db71ae66460a
 	golang.zx2c4.com/wireguard v0.0.20200321-0.20200607075020-f28a6d244b51
 	golang.zx2c4.com/wireguard/wgctrl v0.0.0-20200609130330-bd2cb7843e1b
 	golang.zx2c4.com/wireguard/windows v0.1.1
