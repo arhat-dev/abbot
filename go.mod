@@ -58,7 +58,7 @@ require (
 	golang.zx2c4.com/wireguard v0.0.20200321-0.20200607075020-f28a6d244b51
 	golang.zx2c4.com/wireguard/wgctrl v0.0.0-20200609130330-bd2cb7843e1b
 	golang.zx2c4.com/wireguard/windows v0.1.1
-	google.golang.org/grpc v1.33.1
+	google.golang.org/grpc v1.33.2
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 	gvisor.dev/gvisor v0.0.0-20201001012933-c4f3063255be
 )
