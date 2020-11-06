@@ -44,7 +44,7 @@ replace gvisor.dev/gvisor => gvisor.dev/gvisor v0.0.0-20201001012933-c4f3063255b
 
 require (
 	arhat.dev/abbot-proto v0.1.0
-	arhat.dev/pkg v0.0.0-20201011023427-3d85bac95f31
+	arhat.dev/pkg v0.2.11
 	github.com/containernetworking/cni v0.8.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/goiiot/libmqtt v0.9.6
@@ -54,9 +54,7 @@ require (
 	github.com/vishvananda/netlink v1.1.0
 	github.com/vishvananda/netns v0.0.0-20200728191858-db3c7e526aae
 	go.uber.org/multierr v1.6.0
-	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect
-	golang.org/x/sys v0.0.0-20201017003518-b09fb700fbb7
-	golang.org/x/text v0.3.3 // indirect
+	golang.org/x/sys v0.0.0-20201101102859-da207088b7d1
 	golang.zx2c4.com/wireguard v0.0.20200321-0.20200607075020-f28a6d244b51
 	golang.zx2c4.com/wireguard/wgctrl v0.0.0-20200609130330-bd2cb7843e1b
 	golang.zx2c4.com/wireguard/windows v0.1.1
