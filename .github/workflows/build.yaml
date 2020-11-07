@@ -44,7 +44,7 @@ jobs:
     - uses: actions/setup-go@v2
       with:
         # TODO: update to 1.15.x once 1.15.4 released
-        go-version: 1.14.x
+        go-version: 1.15.x
 
     - name: Build
       run: |
@@ -87,7 +87,7 @@ jobs:
     - uses: actions/setup-go@v2
       with:
         # TODO: update to 1.15.x once 1.15.4 released
-        go-version: 1.14.x
+        go-version: 1.15.x
 
     - name: Build
       run: |
@@ -124,7 +124,7 @@ jobs:
     - uses: actions/setup-go@v2
       with:
         # TODO: update to 1.15.x once 1.15.4 released
-        go-version: 1.14.x
+        go-version: 1.15.x
 
     - name: Build
       run: |
