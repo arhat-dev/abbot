@@ -24,15 +24,7 @@ import (
 )
 
 func init() {
-	driver.Register(constant.DriverUsernet, "aix", NewDriver, NewConfig)
-	driver.Register(constant.DriverUsernet, "dragonfly", NewDriver, NewConfig)
-	driver.Register(constant.DriverUsernet, "darwin", NewDriver, NewConfig)
-	driver.Register(constant.DriverUsernet, "freebsd", NewDriver, NewConfig)
-	driver.Register(constant.DriverUsernet, "openbsd", NewDriver, NewConfig)
-	driver.Register(constant.DriverUsernet, "solaris", NewDriver, NewConfig)
-	driver.Register(constant.DriverUsernet, "netbsd", NewDriver, NewConfig)
-	driver.Register(constant.DriverUsernet, "windows", NewDriver, NewConfig)
-	driver.Register(constant.DriverUsernet, "linux", NewDriver, NewConfig)
+	driver.Register(constant.DriverUsernet, NewDriver, NewConfig)
 }
 
 func NewDriver(ctx context.Context, provider string, cfg interface{}) (types.Driver, error) {

@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	driver.Register(constant.DriverBridge, "linux", NewDriver, NewConfig)
+	driver.Register(constant.DriverBridge, NewDriver, NewConfig)
 }
 
 func (d *Driver) Provider() string {

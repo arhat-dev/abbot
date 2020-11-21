@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"runtime"
 
 	"arhat.dev/abbot-proto/abbotgopb"
 	"arhat.dev/pkg/log"
@@ -181,12 +180,12 @@ func (m *Manager) handleHostNetworkConfigEnsure(
 
 			switch exp.Config.(type) {
 			case *abbotgopb.HostNetworkInterface_Bridge:
-				d, err2 = driver.NewDriver(m.ctx, exp.Provider, constant.DriverBridge, runtime.GOOS, exp)
+				d, err2 = driver.NewDriver(m.ctx, exp.Provider, constant.DriverBridge, exp)
 				if err2 != nil {
 					return fmt.Errorf("failed to create bridge interface %s: %w", name, err2)
 				}
 			case *abbotgopb.HostNetworkInterface_Wireguard:
-				d, err2 = driver.NewDriver(m.ctx, exp.Provider, constant.DriverWireguard, runtime.GOOS, exp)
+				d, err2 = driver.NewDriver(m.ctx, exp.Provider, constant.DriverWireguard, exp)
 				if err2 != nil {
 					return fmt.Errorf("failed to create wireguard interface %s: %w", name, err2)
 				}

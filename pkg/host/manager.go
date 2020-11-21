@@ -3,7 +3,6 @@ package host
 import (
 	"context"
 	"fmt"
-	"runtime"
 	"sync"
 	"time"
 
@@ -40,7 +39,7 @@ func NewManager(
 			return nil, fmt.Errorf("invalid duplicate interface name %s", n.Name)
 		}
 
-		d, err := driver.NewDriver(ctx, constant.ProviderStatic, n.Driver, runtime.GOOS, n.DriverConfig)
+		d, err := driver.NewDriver(ctx, constant.ProviderStatic, n.Driver, n.DriverConfig)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create driver %s for %s: %w", n.Driver, n.Name, err)
 		}

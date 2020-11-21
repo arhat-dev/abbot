@@ -25,11 +25,7 @@ import (
 )
 
 func init() {
-	driver.Register(constant.DriverWireguard, "darwin", NewDriver, NewConfig)
-	driver.Register(constant.DriverWireguard, "freebsd", NewDriver, NewConfig)
-	driver.Register(constant.DriverWireguard, "openbsd", NewDriver, NewConfig)
-	driver.Register(constant.DriverWireguard, "windows", NewDriver, NewConfig)
-	driver.Register(constant.DriverWireguard, "linux", NewDriver, NewConfig)
+	driver.Register(constant.DriverWireguard, NewDriver, NewConfig)
 }
 
 func NewDriver(ctx context.Context, provider string, cfg interface{}) (types.Driver, error) {

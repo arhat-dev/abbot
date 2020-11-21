@@ -9,7 +9,6 @@ import (
 
 type key struct {
 	name string
-	os   string
 }
 
 type factory struct {
@@ -24,35 +23,32 @@ type (
 
 var supportedDrivers = make(map[key]factory)
 
-func Register(name, os string, newDriver FactoryFunc, newDriverConfig ConfigFactoryFunc) {
+func Register(name string, newDriver FactoryFunc, newDriverConfig ConfigFactoryFunc) {
 	supportedDrivers[key{
 		name: name,
-		os:   os,
 	}] = factory{
 		newDriver: newDriver,
 		newConfig: newDriverConfig,
 	}
 }
 
-func NewDriver(ctx context.Context, provider, driverName, os string, cfg interface{}) (types.Driver, error) {
+func NewDriver(ctx context.Context, provider, driverName string, cfg interface{}) (types.Driver, error) {
 	f, ok := supportedDrivers[key{
 		name: driverName,
-		os:   os,
 	}]
 	if !ok {
-		return nil, fmt.Errorf("driver %s on %s not found", driverName, os)
+		return nil, fmt.Errorf("driver %s not found", driverName)
 	}
 
 	return f.newDriver(ctx, provider, cfg)
 }
 
-func NewConfig(name, os string) (interface{}, error) {
+func NewConfig(name string) (interface{}, error) {
 	f, ok := supportedDrivers[key{
 		name: name,
-		os:   os,
 	}]
 	if !ok {
-		return nil, fmt.Errorf("driver config for %s on %s not found", name, os)
+		return nil, fmt.Errorf("driver config for %s not found", name)
 	}
 
 	return f.newConfig(), nil

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"runtime"
 
 	"gopkg.in/yaml.v3"
 
@@ -85,7 +84,7 @@ func unmarshalInterfaceConfig(m map[string]interface{}) (driverName, ifname stri
 		return "", "", nil, fmt.Errorf("failed to get driver config bytes: %w", err)
 	}
 
-	config, err := driver.NewConfig(driverName, runtime.GOOS)
+	config, err := driver.NewConfig(driverName)
 	if err != nil {
 		return "", "", nil, fmt.Errorf("unknown driver %s: %w", driverName, err)
 	}
