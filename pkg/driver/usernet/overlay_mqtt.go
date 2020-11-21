@@ -11,8 +11,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"arhat.dev/pkg/confhelper"
 	"arhat.dev/pkg/log"
+	"arhat.dev/pkg/tlshelper"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/goiiot/libmqtt"
 	"gvisor.dev/gvisor/pkg/tcpip/buffer"
@@ -39,7 +39,7 @@ type MQTTOverlayConfig struct {
 	Password  string `json:"password" yaml:"password"`
 	Keepalive int32  `json:"keepalive" yaml:"keepalive"`
 
-	TLS confhelper.TLSConfig `json:"tls" yaml:"tls"`
+	TLS tlshelper.TLSConfig `json:"tls" yaml:"tls"`
 }
 
 type MQTTConnectInfo struct {
