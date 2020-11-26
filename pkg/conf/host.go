@@ -5,18 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"arhat.dev/abbot/pkg/drivers"
 	"gopkg.in/yaml.v3"
-
-	"arhat.dev/abbot/pkg/driver"
 )
-
-type DriverConfig interface{}
 
 type InterfaceConfig struct {
 	Driver string `json:"-" yaml:"-"`
 	Name   string `json:"-" yaml:"-"`
 
-	DriverConfig `json:",inline" yaml:",inline"`
+	Config interface{} `json:",inline" yaml:",inline"`
 }
 
 func (c *InterfaceConfig) UnmarshalJSON(data []byte) error {
@@ -27,12 +24,7 @@ func (c *InterfaceConfig) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	c.Driver, c.Name, c.DriverConfig, err = unmarshalInterfaceConfig(m)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return unmarshalInterfaceConfig(m, c)
 }
 
 func (c *InterfaceConfig) UnmarshalYAML(value *yaml.Node) error {
@@ -48,58 +40,54 @@ func (c *InterfaceConfig) UnmarshalYAML(value *yaml.Node) error {
 		return err
 	}
 
-	c.Driver, c.Name, c.DriverConfig, err = unmarshalInterfaceConfig(m)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return unmarshalInterfaceConfig(m, c)
 }
 
-func unmarshalInterfaceConfig(m map[string]interface{}) (driverName, ifname string, _ interface{}, _ error) {
+func unmarshalInterfaceConfig(m map[string]interface{}, config *InterfaceConfig) error {
 	d, ok := m["driver"]
 	if !ok {
-		return "", "", nil, fmt.Errorf("must specify driver type")
+		return fmt.Errorf("must specify driver type")
 	}
 
-	driverName, ok = d.(string)
+	config.Driver, ok = d.(string)
 	if !ok {
-		return "", "", nil, fmt.Errorf("driver type must be a string")
+		return fmt.Errorf("driver type must be a string")
 	}
 
 	n, ok := m["name"]
 	if !ok {
-		return "", "", nil, fmt.Errorf("must specify interface name")
+		return fmt.Errorf("must specify interface name")
 	}
 
-	ifname, ok = n.(string)
-	if !ok || ifname == "" {
-		return "", "", nil, fmt.Errorf("invalid interface name: %s", ifname)
+	config.Name, ok = n.(string)
+	if !ok || config.Name == "" {
+		return fmt.Errorf("invalid interface name: %s", config.Name)
 	}
 
 	delete(m, "driver")
 
 	configData, err := json.Marshal(m)
 	if err != nil {
-		return "", "", nil, fmt.Errorf("failed to get driver config bytes: %w", err)
+		return fmt.Errorf("failed to get driver config bytes: %w", err)
 	}
 
-	config, err := driver.NewConfig(driverName)
+	config.Config, err = drivers.NewConfig(config.Driver)
 	if err != nil {
-		return "", "", nil, fmt.Errorf("unknown driver %s: %w", driverName, err)
+		return fmt.Errorf("unknown driver %s: %w", config.Driver, err)
 	}
 
 	dec := json.NewDecoder(bytes.NewReader(configData))
 	dec.DisallowUnknownFields()
 	err = dec.Decode(config)
 	if err != nil {
-		return "", "", nil, fmt.Errorf("failed to resolve driver config %s: %w", driverName, err)
+		return fmt.Errorf("failed to resolve driver config %s: %w", config.Driver, err)
 	}
 
-	return driverName, ifname, config, nil
+	return nil
 }
 
 type HostNetworkConfig struct {
+	// Interfaces static interface definitions
 	Interfaces []InterfaceConfig `json:"interfaces" yaml:"interfaces"`
 	// Proxies config to redirect network traffic
 	Proxies []ProxyConfig `json:"proxies" yaml:"proxies"`

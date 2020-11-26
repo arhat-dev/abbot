@@ -13,19 +13,19 @@ import (
 	"arhat.dev/abbot-proto/abbotgopb"
 
 	"arhat.dev/abbot/pkg/constant"
+	"arhat.dev/abbot/pkg/drivers"
 
 	"golang.zx2c4.com/wireguard/device"
 	"golang.zx2c4.com/wireguard/wgctrl"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 
-	"arhat.dev/abbot/pkg/driver"
 	"arhat.dev/abbot/pkg/types"
 	"arhat.dev/abbot/pkg/util"
 	"arhat.dev/abbot/pkg/wrap/netlink"
 )
 
 func init() {
-	driver.Register(constant.DriverWireguard, NewDriver, NewConfig)
+	drivers.Register(constant.DriverWireguard, NewDriver, NewConfig)
 }
 
 func NewDriver(ctx context.Context, provider string, cfg interface{}) (types.Driver, error) {

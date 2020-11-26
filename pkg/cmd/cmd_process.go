@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strconv"
 
@@ -36,9 +37,8 @@ func newRequestCmd(appCtx *context.Context) *cobra.Command {
 		Use:           "process",
 		SilenceErrors: true,
 		SilenceUsage:  true,
-		Args:          cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := runProcess(*appCtx, (*appCtx).Value(constant.ContextKeyConfig).(*conf.AbbotConfig), args[0])
+			err := runProcess(*appCtx, (*appCtx).Value(constant.ContextKeyConfig).(*conf.AbbotConfig))
 			if err != nil {
 				_, _ = fmt.Fprintln(os.Stderr, err.Error())
 			}
@@ -50,16 +50,37 @@ func newRequestCmd(appCtx *context.Context) *cobra.Command {
 	return reqCmd
 }
 
-func runProcess(ctx context.Context, config *conf.AbbotConfig, reqData string) error {
-	pbBytes, err := base64.StdEncoding.DecodeString(reqData)
+func runProcess(ctx context.Context, config *conf.AbbotConfig) error {
+	pbBytes, err := ioutil.ReadAll(os.Stdin)
 	if err != nil {
-		return fmt.Errorf("failed to decode base64 encoded request: %w", err)
+		return fmt.Errorf("failed to read request data: %w", err)
 	}
 
 	req := new(abbotgopb.Request)
-	err = req.Unmarshal(pbBytes)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal pb bytes: %w", err)
+	expectEnvAction := false
+
+	if len(pbBytes) != 0 {
+		expectEnvAction = true
+		err = req.Unmarshal(pbBytes)
+		if err != nil {
+			return fmt.Errorf("failed to unmarshal pb bytes: %w", err)
+		}
+	}
+
+	reqAction, hasEnvAction := os.LookupEnv("ABBOT_REQ_ACTION")
+	if hasEnvAction {
+		switch reqAction {
+		case "container:restore":
+			req.Kind = abbotgopb.REQ_RESTORE_CTR_NETWORK
+		case "container:query":
+			req.Kind = abbotgopb.REQ_QUERY_CTR_NETWORK
+		case "container:delete":
+			req.Kind = abbotgopb.REQ_DELETE_CTR_NETWORK
+		default:
+			return fmt.Errorf("unsupported env action")
+		}
+	} else if expectEnvAction {
+		return fmt.Errorf("invalid request with no request body and env action")
 	}
 
 	ctrID := os.Getenv("ABBOT_REQ_CONTAINER_ID")
@@ -79,6 +100,7 @@ func runProcess(ctx context.Context, config *conf.AbbotConfig, reqData string) e
 			if err != nil {
 				return fmt.Errorf("failed to unmarshal ContainerNetworkEnsureRequest: %w", err)
 			}
+
 			if ctrID != "" {
 				reqBody.ContainerId = ctrID
 				if len(reqBody.CniArgs) > 0 {
@@ -93,10 +115,13 @@ func runProcess(ctx context.Context, config *conf.AbbotConfig, reqData string) e
 			req.Body, err = reqBody.Marshal()
 		case abbotgopb.REQ_RESTORE_CTR_NETWORK:
 			reqBody := new(abbotgopb.ContainerNetworkRestoreRequest)
-			err = reqBody.Unmarshal(req.Body)
-			if err != nil {
-				return fmt.Errorf("failed to unmarshal ContainerNetworkRestoreRequest: %w", err)
+			if len(req.Body) != 0 {
+				err = reqBody.Unmarshal(req.Body)
+				if err != nil {
+					return fmt.Errorf("failed to unmarshal ContainerNetworkRestoreRequest: %w", err)
+				}
 			}
+
 			if ctrID != "" {
 				reqBody.ContainerId = ctrID
 			}
@@ -106,10 +131,13 @@ func runProcess(ctx context.Context, config *conf.AbbotConfig, reqData string) e
 			req.Body, err = reqBody.Marshal()
 		case abbotgopb.REQ_DELETE_CTR_NETWORK:
 			reqBody := new(abbotgopb.ContainerNetworkDeleteRequest)
-			err = reqBody.Unmarshal(req.Body)
-			if err != nil {
-				return fmt.Errorf("failed to unmarshal ContainerNetworkDeleteRequest: %w", err)
+			if len(req.Body) != 0 {
+				err = reqBody.Unmarshal(req.Body)
+				if err != nil {
+					return fmt.Errorf("failed to unmarshal ContainerNetworkDeleteRequest: %w", err)
+				}
 			}
+
 			if ctrID != "" {
 				reqBody.ContainerId = ctrID
 			}
@@ -119,10 +147,13 @@ func runProcess(ctx context.Context, config *conf.AbbotConfig, reqData string) e
 			req.Body, err = reqBody.Marshal()
 		case abbotgopb.REQ_QUERY_CTR_NETWORK:
 			reqBody := new(abbotgopb.ContainerNetworkQueryRequest)
-			err = reqBody.Unmarshal(req.Body)
-			if err != nil {
-				return fmt.Errorf("failed to unmarshal ContainerNetworkQueryRequest: %w", err)
+			if len(req.Body) != 0 {
+				err = reqBody.Unmarshal(req.Body)
+				if err != nil {
+					return fmt.Errorf("failed to unmarshal ContainerNetworkQueryRequest: %w", err)
+				}
 			}
+
 			if ctrID != "" {
 				reqBody.ContainerId = ctrID
 			}

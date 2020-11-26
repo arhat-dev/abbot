@@ -9,6 +9,7 @@ import (
 	"arhat.dev/abbot-proto/abbotgopb"
 
 	"arhat.dev/abbot/pkg/constant"
+	"arhat.dev/abbot/pkg/drivers"
 
 	"arhat.dev/pkg/log"
 	"gvisor.dev/gvisor/pkg/tcpip"
@@ -19,12 +20,11 @@ import (
 	"gvisor.dev/gvisor/pkg/tcpip/stack"
 	"gvisor.dev/gvisor/pkg/tcpip/transport/raw"
 
-	"arhat.dev/abbot/pkg/driver"
 	"arhat.dev/abbot/pkg/types"
 )
 
 func init() {
-	driver.Register(constant.DriverUsernet, NewDriver, NewConfig)
+	drivers.Register(constant.DriverUsernet, NewDriver, NewConfig)
 }
 
 func NewDriver(ctx context.Context, provider string, cfg interface{}) (types.Driver, error) {

@@ -2,11 +2,11 @@ package bridge
 
 import (
 	"arhat.dev/abbot/pkg/constant"
-	"arhat.dev/abbot/pkg/driver"
+	"arhat.dev/abbot/pkg/drivers"
 )
 
 func init() {
-	driver.Register(constant.DriverBridge, NewDriver, NewConfig)
+	drivers.Register(constant.DriverBridge, NewDriver, NewConfig)
 }
 
 func (d *Driver) Provider() string {

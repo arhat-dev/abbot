@@ -5,5 +5,5 @@ package driveradd
 
 import (
 	// Add usernet support
-	_ "arhat.dev/abbot/pkg/driver/usernet"
+	_ "arhat.dev/abbot/pkg/drivers/usernet"
 )

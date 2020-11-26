@@ -9,7 +9,7 @@ import (
 	"arhat.dev/pkg/log"
 
 	"arhat.dev/abbot/pkg/constant"
-	"arhat.dev/abbot/pkg/driver"
+	"arhat.dev/abbot/pkg/drivers"
 	"arhat.dev/abbot/pkg/types"
 )
 
@@ -180,12 +180,12 @@ func (m *Manager) handleHostNetworkConfigEnsure(
 
 			switch exp.Config.(type) {
 			case *abbotgopb.HostNetworkInterface_Bridge:
-				d, err2 = driver.NewDriver(m.ctx, exp.Provider, constant.DriverBridge, exp)
+				d, err2 = drivers.NewDriver(m.ctx, exp.Provider, constant.DriverBridge, exp)
 				if err2 != nil {
 					return fmt.Errorf("failed to create bridge interface %s: %w", name, err2)
 				}
 			case *abbotgopb.HostNetworkInterface_Wireguard:
-				d, err2 = driver.NewDriver(m.ctx, exp.Provider, constant.DriverWireguard, exp)
+				d, err2 = drivers.NewDriver(m.ctx, exp.Provider, constant.DriverWireguard, exp)
 				if err2 != nil {
 					return fmt.Errorf("failed to create wireguard interface %s: %w", name, err2)
 				}

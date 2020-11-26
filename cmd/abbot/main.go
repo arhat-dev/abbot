@@ -26,7 +26,7 @@ import (
 	"arhat.dev/abbot/pkg/version"
 
 	// Add network device drivers
-	_ "arhat.dev/abbot/pkg/driver/driveradd"
+	_ "arhat.dev/abbot/pkg/drivers/driveradd"
 )
 
 func main() {
