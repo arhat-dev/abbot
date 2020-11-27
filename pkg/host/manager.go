@@ -63,9 +63,6 @@ func NewManager(
 func (m *Manager) Start() error {
 	var err error
 	err = func() error {
-		m.mu.Lock()
-		defer m.mu.Unlock()
-
 		m.logger.D("ensuring all host interfaces for the first time")
 		m.hostDeviceNameSeq, err = m.ensureAllDevices(m.hostDeviceNameSeq, m.hostDevices)
 		if err != nil {

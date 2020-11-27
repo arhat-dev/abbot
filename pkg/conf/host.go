@@ -5,15 +5,16 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"arhat.dev/abbot/pkg/drivers"
 	"gopkg.in/yaml.v3"
+
+	"arhat.dev/abbot/pkg/drivers"
 )
 
 type InterfaceConfig struct {
-	Driver string `json:"-" yaml:"-"`
-	Name   string `json:"-" yaml:"-"`
+	Driver string `json:"driver" yaml:"driver"`
+	Name   string `json:"name" yaml:"name"`
 
-	Config interface{} `json:",inline" yaml:",inline"`
+	Config interface{} `json:"config" yaml:"config"`
 }
 
 func (c *InterfaceConfig) UnmarshalJSON(data []byte) error {
@@ -78,7 +79,7 @@ func unmarshalInterfaceConfig(m map[string]interface{}, config *InterfaceConfig)
 
 	dec := json.NewDecoder(bytes.NewReader(configData))
 	dec.DisallowUnknownFields()
-	err = dec.Decode(config)
+	err = dec.Decode(config.Config)
 	if err != nil {
 		return fmt.Errorf("failed to resolve driver config %s: %w", config.Driver, err)
 	}
