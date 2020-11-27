@@ -11,8 +11,8 @@
 
 2. Update `go.mod` to use desiered [`abbot-proto`](https://github.com/arhat-dev/abbot-proto) with your new drvier config
 
-3. Create a new directory [`pkg/driver/xxx`](https://github.com/arhat-dev/abbot/blob/master/pkg/driver), where `xxx` is your driver name in snake case, and in this directory:
-   - Create file `config.go`, define your config and config factory func like [wireguard/config.go](https://github.com/arhat-dev/abbot/blob/master/pkg/driver/wireguard/config.go)
-   - Implement your driver and driver factory in `xxx.go` (where `xxx` is your driver name in snake case), register your driver config factory and driver factory func in this file with driver name in snake case like [`wireguard/wireguard.go`](https://github.com/arhat-dev/abbot/blob/master/pkg/driver/wireguard/wireguard.go)
+3. Create a new directory [`pkg/drivers/xxx`](https://github.com/arhat-dev/abbot/blob/master/pkg/driver), where `xxx` is your driver name in snake case, and in this directory:
+   - Create file `config.go`, define your config and config factory func like [wireguard/config.go](https://github.com/arhat-dev/abbot/blob/master/pkg/drivers/wireguard/config.go)
+   - Implement your driver and driver factory in `xxx.go` (where `xxx` is your driver name in snake case), register your driver config factory and driver factory func in this file with driver name in snake case like [`wireguard/wireguard.go`](https://github.com/arhat-dev/abbot/blob/master/pkg/drivers/wireguard/wireguard.go)
 
-4. Import your driver in [pkg/driver/driveradd/add_xxx.go](https://github.com/arhat-dev/abbot/blob/master/pkg/driver/driveradd) and restrict build tags to avoid unexpected build failure
+4. Import your driver in [pkg/drivers/driveradd/add_xxx.go](https://github.com/arhat-dev/abbot/blob/master/pkg/drivers/driveradd) and restrict build tags to avoid unexpected build failure
