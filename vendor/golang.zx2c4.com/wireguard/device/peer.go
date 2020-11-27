@@ -28,6 +28,7 @@ type Peer struct {
 	device                      *Device
 	endpoint                    conn.Endpoint
 	persistentKeepaliveInterval uint16
+	disableRoaming              bool
 
 	// These fields are accessed with atomic operations, which must be
 	// 64-bit aligned even on 32-bit platforms. Go guarantees that an
@@ -57,6 +58,7 @@ type Peer struct {
 	}
 
 	queue struct {
+		sync.RWMutex
 		nonce                           chan *QueueOutboundElement // nonce / pre-handshake queue
 		outbound                        chan *QueueOutboundElement // sequential ordering of work
 		inbound                         chan *QueueInboundElement  // sequential ordering of work
@@ -194,10 +196,11 @@ func (peer *Peer) Start() {
 	peer.routines.stopping.Add(PeerRoutineNumber)
 
 	// prepare queues
-
+	peer.queue.Lock()
 	peer.queue.nonce = make(chan *QueueOutboundElement, QueueOutboundSize)
 	peer.queue.outbound = make(chan *QueueOutboundElement, QueueOutboundSize)
 	peer.queue.inbound = make(chan *QueueInboundElement, QueueInboundSize)
+	peer.queue.Unlock()
 
 	peer.timersInit()
 	peer.handshake.lastSentHandshake = time.Now().Add(-(RekeyTimeout + time.Second))
@@ -283,17 +286,17 @@ func (peer *Peer) Stop() {
 
 	// close queues
 
+	peer.queue.Lock()
 	close(peer.queue.nonce)
 	close(peer.queue.outbound)
 	close(peer.queue.inbound)
+	peer.queue.Unlock()
 
 	peer.ZeroAndFlushAll()
 }
 
-var RoamingDisabled bool
-
 func (peer *Peer) SetEndpointFromPacket(endpoint conn.Endpoint) {
-	if RoamingDisabled {
+	if peer.disableRoaming {
 		return
 	}
 	peer.Lock()

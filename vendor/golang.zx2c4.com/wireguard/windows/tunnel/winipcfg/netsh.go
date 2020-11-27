@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: MIT
  *
- * Copyright (C) 2019 WireGuard LLC. All Rights Reserved.
+ * Copyright (C) 2019-2020 WireGuard LLC. All Rights Reserved.
  */
 
 package winipcfg
@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"golang.org/x/sys/windows"
 )
@@ -25,9 +26,11 @@ func runNetsh(cmds []string) error {
 		return err
 	}
 	cmd := exec.Command(filepath.Join(system32, "netsh.exe")) // I wish we could append (, "-f", "CONIN$") but Go sets up the process context wrong.
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		return fmt.Errorf("runNetsh stdin pipe - %v", err)
+		return fmt.Errorf("runNetsh stdin pipe - %w", err)
 	}
 	go func() {
 		defer stdin.Close()
@@ -35,7 +38,7 @@ func runNetsh(cmds []string) error {
 	}()
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("runNetsh run - %v", err)
+		return fmt.Errorf("runNetsh run - %w", err)
 	}
 	// Horrible kludges, sorry.
 	cleaned := bytes.ReplaceAll(output, []byte("netsh>"), []byte{})

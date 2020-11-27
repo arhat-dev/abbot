@@ -75,14 +75,14 @@ go.uber.org/zap/internal/bufferpool
 go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit
 go.uber.org/zap/zapcore
-# golang.org/x/crypto v0.0.0-20201112155050-0c6587e931a9
+# golang.org/x/crypto v0.0.0-20201117144127-c1f2f97bffc9
 golang.org/x/crypto/blake2s
 golang.org/x/crypto/chacha20
 golang.org/x/crypto/chacha20poly1305
 golang.org/x/crypto/curve25519
 golang.org/x/crypto/internal/subtle
 golang.org/x/crypto/poly1305
-# golang.org/x/net v0.0.0-20200930145003-4acb6c075d10
+# golang.org/x/net v0.0.0-20201110031124-69a78807bb2b
 golang.org/x/net/bpf
 golang.org/x/net/http/httpguts
 golang.org/x/net/http2
@@ -94,21 +94,21 @@ golang.org/x/net/internal/timeseries
 golang.org/x/net/ipv4
 golang.org/x/net/ipv6
 golang.org/x/net/trace
-# golang.org/x/sys v0.0.0-20201119102817-f84b799fce68 => golang.org/x/sys v0.0.0-20200501145240-bc7a7d42d5c3
+# golang.org/x/sys v0.0.0-20201126233918-771906719818
 ## explicit
 golang.org/x/sys/cpu
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 golang.org/x/sys/windows/registry
-# golang.org/x/text v0.3.3
+# golang.org/x/text v0.3.5-0.20201118010606-4482a914f523
 golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
 # golang.org/x/time v0.0.0-20191024005414-555d28b269f0
 golang.org/x/time/rate
-# golang.zx2c4.com/wireguard v0.0.20200321-0.20200607075020-f28a6d244b51
+# golang.zx2c4.com/wireguard v0.0.20201118
 ## explicit
 golang.zx2c4.com/wireguard/conn
 golang.zx2c4.com/wireguard/device
@@ -120,11 +120,8 @@ golang.zx2c4.com/wireguard/rwcancel
 golang.zx2c4.com/wireguard/tai64n
 golang.zx2c4.com/wireguard/tun
 golang.zx2c4.com/wireguard/tun/wintun
-golang.zx2c4.com/wireguard/tun/wintun/iphlpapi
-golang.zx2c4.com/wireguard/tun/wintun/namespaceapi
-golang.zx2c4.com/wireguard/tun/wintun/nci
-golang.zx2c4.com/wireguard/tun/wintun/registry
-golang.zx2c4.com/wireguard/tun/wintun/setupapi
+golang.zx2c4.com/wireguard/tun/wintun/memmod
+golang.zx2c4.com/wireguard/tun/wintun/resource
 # golang.zx2c4.com/wireguard/wgctrl v0.0.0-20200609130330-bd2cb7843e1b
 ## explicit
 golang.zx2c4.com/wireguard/wgctrl
@@ -135,7 +132,7 @@ golang.zx2c4.com/wireguard/wgctrl/internal/wgopenbsd
 golang.zx2c4.com/wireguard/wgctrl/internal/wgopenbsd/internal/wgh
 golang.zx2c4.com/wireguard/wgctrl/internal/wguser
 golang.zx2c4.com/wireguard/wgctrl/wgtypes
-# golang.zx2c4.com/wireguard/windows v0.1.1
+# golang.zx2c4.com/wireguard/windows v0.3.1
 ## explicit
 golang.zx2c4.com/wireguard/windows/tunnel/winipcfg
 # google.golang.org/genproto v0.0.0-20200904004341-0bd0a958aa1d
@@ -252,6 +249,7 @@ nhooyr.io/websocket/internal/bpool
 nhooyr.io/websocket/internal/errd
 nhooyr.io/websocket/internal/wsjs
 nhooyr.io/websocket/internal/xsync
+# gvisor.dev/gvisor => gvisor.dev/gvisor v0.0.0-20201001012933-c4f3063255be
 # k8s.io/api => github.com/kubernetes/api v0.19.4
 # k8s.io/apiextensions-apiserver => github.com/kubernetes/apiextensions-apiserver v0.19.4
 # k8s.io/apimachinery => github.com/kubernetes/apimachinery v0.19.4
@@ -265,7 +263,7 @@ nhooyr.io/websocket/internal/xsync
 # k8s.io/cri-api => github.com/kubernetes/cri-api v0.19.4
 # k8s.io/csi-translation-lib => github.com/kubernetes/csi-translation-lib v0.19.4
 # k8s.io/klog => github.com/kubernetes/klog v1.0.0
-# k8s.io/klog/v2 => github.com/kubernetes/klog/v2 v2.3.0
+# k8s.io/klog/v2 => github.com/kubernetes/klog/v2 v2.4.0
 # k8s.io/kube-aggregator => github.com/kubernetes/kube-aggregator v0.19.4
 # k8s.io/kube-controller-manager => github.com/kubernetes/kube-controller-manager v0.19.4
 # k8s.io/kube-proxy => github.com/kubernetes/kube-proxy v0.19.4
@@ -278,7 +276,3 @@ nhooyr.io/websocket/internal/xsync
 # k8s.io/sample-apiserver => github.com/kubernetes/sample-apiserver v0.19.4
 # k8s.io/utils => github.com/kubernetes/utils v0.0.0-20201110183641-67b214c5f920
 # vbom.ml/util => github.com/fvbommel/util v0.0.2
-# github.com/lxn/walk => golang.zx2c4.com/wireguard/windows v0.0.0-20200319192453-d35a18df246f
-# github.com/lxn/win => golang.zx2c4.com/wireguard/windows v0.0.0-20191128151145-b4e4933852d5
-# golang.org/x/sys => golang.org/x/sys v0.0.0-20200501145240-bc7a7d42d5c3
-# gvisor.dev/gvisor => gvisor.dev/gvisor v0.0.0-20201001012933-c4f3063255be

@@ -383,10 +383,10 @@ func (device *Device) Close() {
 	device.isUp.Set(false)
 
 	close(device.signals.stop)
+	device.state.stopping.Wait()
 
 	device.RemoveAllPeers()
 
-	device.state.stopping.Wait()
 	device.FlushPacketQueues()
 
 	device.rate.limiter.Close()
@@ -428,6 +428,12 @@ func unsafeCloseBind(device *Device) error {
 	}
 	netc.stopping.Wait()
 	return err
+}
+
+func (device *Device) Bind() conn.Bind {
+	device.net.Lock()
+	defer device.net.Unlock()
+	return device.net.bind
 }
 
 func (device *Device) BindSetMark(mark uint32) error {
