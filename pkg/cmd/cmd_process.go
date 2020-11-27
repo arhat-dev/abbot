@@ -50,6 +50,7 @@ func newRequestCmd(appCtx *context.Context) *cobra.Command {
 	return reqCmd
 }
 
+// nolint:gocyclo
 func runProcess(ctx context.Context, config *conf.AbbotConfig) error {
 	pbBytes, err := ioutil.ReadAll(os.Stdin)
 	if err != nil {
