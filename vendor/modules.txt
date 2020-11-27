@@ -1,4 +1,4 @@
-# arhat.dev/abbot-proto v0.1.0
+# arhat.dev/abbot-proto v0.1.1-0.20201127100340-fcd4ba56957a
 ## explicit
 arhat.dev/abbot-proto/abbotgopb
 # arhat.dev/pkg v0.4.4

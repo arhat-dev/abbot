@@ -19,7 +19,6 @@ import (
 	"golang.zx2c4.com/wireguard/wgctrl"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 
-	"arhat.dev/abbot/pkg/types"
 	"arhat.dev/abbot/pkg/util"
 	"arhat.dev/abbot/pkg/wrap/netlink"
 )
@@ -28,7 +27,7 @@ func init() {
 	drivers.Register(constant.DriverWireguard, NewDriver, NewConfig)
 }
 
-func NewDriver(ctx context.Context, provider string, cfg interface{}) (types.Driver, error) {
+func NewDriver(ctx context.Context, provider string, cfg interface{}) (drivers.Interface, error) {
 	var config *Config
 	switch c := cfg.(type) {
 	case *Config:
@@ -320,12 +319,9 @@ func (d *Driver) delete(recoverable bool) error {
 	return nil
 }
 
-func (d *Driver) Delete() error {
+func (d *Driver) Delete(force bool) error {
+	_ = force
 	// no matter application exited or not, we should delete this device
-	select {
-	case <-d.ctx.Done():
-	default:
-	}
 	return d.delete(false)
 }
 

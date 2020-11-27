@@ -1,8 +1,8 @@
-package types
+package drivers
 
 import "arhat.dev/abbot-proto/abbotgopb"
 
-type Driver interface {
+type Interface interface {
 	// Provider of the interface, `static` means from config file
 	Provider() string
 
@@ -22,5 +22,5 @@ type Driver interface {
 	GetConfig() (*abbotgopb.HostNetworkInterface, error)
 
 	// Delete this interface
-	Delete() error
+	Delete(force bool) error
 }

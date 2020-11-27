@@ -6,7 +6,7 @@ go 1.15
 replace gvisor.dev/gvisor => gvisor.dev/gvisor v0.0.0-20201001012933-c4f3063255be
 
 require (
-	arhat.dev/abbot-proto v0.1.0
+	arhat.dev/abbot-proto v0.1.1-0.20201127100340-fcd4ba56957a
 	arhat.dev/pkg v0.4.4
 	github.com/containernetworking/cni v0.8.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible

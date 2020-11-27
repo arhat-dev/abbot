@@ -18,6 +18,7 @@ func NewConfig() interface{} {
 			Mtu:             device.DefaultMTU,
 			HardwareAddress: "",
 			Addresses:       nil,
+			DeleteOnExit:    false,
 		},
 		DriverWireguard: abbotgopb.DriverWireguard{
 			LogLevel:   "silent",

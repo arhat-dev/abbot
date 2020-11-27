@@ -13,7 +13,6 @@ import (
 	"arhat.dev/abbot/pkg/constant"
 	"arhat.dev/abbot/pkg/container"
 	"arhat.dev/abbot/pkg/drivers"
-	"arhat.dev/abbot/pkg/types"
 )
 
 type Manager struct {
@@ -21,7 +20,7 @@ type Manager struct {
 	logger log.Interface
 
 	hostDeviceNameSeq []string
-	hostDevices       map[string]types.Driver
+	hostDevices       map[string]drivers.Interface
 	mu                *sync.RWMutex
 
 	containerMgr *container.Manager
@@ -33,19 +32,20 @@ func NewManager(
 	containerMgr *container.Manager,
 ) (*Manager, error) {
 	var nameSeq []string
-	hostDevices := make(map[string]types.Driver)
+	hostDevices := make(map[string]drivers.Interface)
 	for _, n := range hostNetwork.Interfaces {
-		if _, ok := hostDevices[n.Name]; ok {
-			return nil, fmt.Errorf("invalid duplicate interface name %s", n.Name)
-		}
-
 		d, err := drivers.NewDriver(ctx, constant.ProviderStatic, n.Driver, n.Config)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create driver %s for %s: %w", n.Driver, n.Name, err)
+			return nil, fmt.Errorf("failed to create driver %s: %w", n.Driver, err)
 		}
 
-		hostDevices[n.Name] = d
-		nameSeq = append(nameSeq, n.Name)
+		name := d.Name()
+		if _, ok := hostDevices[name]; ok {
+			return nil, fmt.Errorf("invalid duplicate interface name %s", name)
+		}
+
+		hostDevices[name] = d
+		nameSeq = append(nameSeq, name)
 	}
 
 	return &Manager{
@@ -64,7 +64,7 @@ func (m *Manager) Start() error {
 	var err error
 	err = func() error {
 		m.logger.D("ensuring all host interfaces for the first time")
-		m.hostDeviceNameSeq, err = m.ensureAllDevices(m.hostDeviceNameSeq, m.hostDevices)
+		err = m.ensureAllDevices()
 		if err != nil {
 			return fmt.Errorf("failed to ensure all host interfaces running for the first time: %w", err)
 		}
@@ -77,27 +77,28 @@ func (m *Manager) Start() error {
 
 	m.logger.V("all host interfaces ensured")
 	m.logger.D("starting host interfaces ensure routine")
-	go m.ensureHostInterfacesPeriodically(5 * time.Second)
 
-	// nolint:gosimple
-	select {
-	case <-m.ctx.Done():
-	}
+	// use defer to make sure cleanup will always run
+	defer func() {
+		m.mu.Lock()
+		defer m.mu.Unlock()
 
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	for i := len(m.hostDeviceNameSeq) - 1; i >= 0; i-- {
-		name := m.hostDeviceNameSeq[i]
-		dev, ok := m.hostDevices[name]
-		if !ok {
-			continue
+		// delete interfaces in reversed order
+		for i := len(m.hostDeviceNameSeq) - 1; i >= 0; i-- {
+			name := m.hostDeviceNameSeq[i]
+			dev, ok := m.hostDevices[name]
+			if !ok {
+				continue
+			}
+
+			err = dev.Delete(false)
+			if err != nil {
+				m.logger.I("failed to delete device", log.String("ifname", name), log.Error(err))
+			}
 		}
+	}()
 
-		err = dev.Delete()
-		if err != nil {
-			m.logger.I("failed to delete device", log.String("ifname", name), log.Error(err))
-		}
-	}
+	m.ensureHostInterfacesPeriodically(5 * time.Second)
 
 	return nil
 }
@@ -110,9 +111,9 @@ func (m *Manager) ensureHostInterfacesPeriodically(interval time.Duration) {
 		select {
 		case <-tk.C:
 			m.logger.V("routine: ensuring all host interfaces")
-			_, err := m.ensureAllDevices(m.hostDeviceNameSeq, m.hostDevices)
+			err := m.ensureAllDevices()
 			if err != nil {
-				m.logger.I("failed to ensure all host interfaces running", log.Error(err))
+				m.logger.I("routine: not all host interfaces running", log.Error(err))
 			} else {
 				m.logger.V("routine: all host interfaces running")
 			}
@@ -122,16 +123,16 @@ func (m *Manager) ensureHostInterfacesPeriodically(interval time.Duration) {
 	}
 }
 
-func (m *Manager) ensureAllDevices(devSeq []string, hostDevices map[string]types.Driver) ([]string, error) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+func (m *Manager) ensureAllDevices() error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
 	var (
 		newSeq []string
 		err    error
 	)
-	for _, devName := range devSeq {
-		dev, ok := hostDevices[devName]
+	for _, devName := range m.hostDeviceNameSeq {
+		dev, ok := m.hostDevices[devName]
 		if !ok {
 			continue
 		}
@@ -144,5 +145,7 @@ func (m *Manager) ensureAllDevices(devSeq []string, hostDevices map[string]types
 		newSeq = append(newSeq, dev.Name())
 	}
 
-	return newSeq, err
+	m.hostDeviceNameSeq = newSeq
+
+	return err
 }

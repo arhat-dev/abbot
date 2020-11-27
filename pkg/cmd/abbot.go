@@ -72,7 +72,14 @@ func NewAbbotCmd() *cobra.Command {
 	// listen address
 	flags.StringVar(&config.Abbot.Listen, "listen", constant.DefaultAbbotListenAddr, "set abbot listen address")
 
-	// network manager config options
+	flags.StringVar(
+		&config.HostNetwork.DataDir,
+		"host.dataDir",
+		constant.DefaultHostNetworkDataDir,
+		"set data dir for host network",
+	)
+
+	// container network config options
 	flags.StringVar(
 		&config.ContainerNetwork.DataDir,
 		"ctr.dataDir",
@@ -87,7 +94,7 @@ func NewAbbotCmd() *cobra.Command {
 		"set paths can find cni plugins",
 	)
 
-	abbotCmd.AddCommand(newRequestCmd(&appCtx))
+	abbotCmd.AddCommand(newProcessCmd(&appCtx))
 
 	return abbotCmd
 }
@@ -134,7 +141,7 @@ func run(ctx context.Context, config *conf.AbbotConfig) error {
 	}
 
 	var containerMgr *container.Manager
-	if netMgrServer != nil {
+	if netMgrServer != nil && config.ContainerNetwork.Enabled {
 		// container manager only accepts dynamic config, thus only create it when
 		// control endpoint is set
 		var err error

@@ -1,5 +1,5 @@
-arhat.dev/abbot-proto v0.1.0 h1:wW2aPeetAtGkR+cY1lVblq3FvIts3VTuezDqPh8ZX4E=
-arhat.dev/abbot-proto v0.1.0/go.mod h1:Z9UjRS2oRNKXyWghyKKw37HRMZCCjGXAJaoMvYHhHmk=
+arhat.dev/abbot-proto v0.1.1-0.20201127100340-fcd4ba56957a h1:FgIlIrbSMMULA2BtB02/zQvtUnKIxAkrsFPvMVAu8Gk=
+arhat.dev/abbot-proto v0.1.1-0.20201127100340-fcd4ba56957a/go.mod h1:c3+Z4vdxcM1BcSzjfparE7yORyIUeYrxbFPvu8DXMJk=
 arhat.dev/pkg v0.4.4 h1:PgvjiTJjA1OKU5hi9PgT+Gc3J4ltDEBj3Vc6CHkCFo8=
 arhat.dev/pkg v0.4.4/go.mod h1:f9aXyFUZhlx68pOrJi0WyCELR1TYwEy7XfVR7uRRX+I=
 bazil.org/fuse v0.0.0-20160811212531-371fbbdaa898/go.mod h1:Xbm+BRKSBEpa4q4hTSxohYNQpsxXPbPry4JJWOB3LB8=
@@ -1259,8 +1259,6 @@ google.golang.org/grpc v1.30.0/go.mod h1:N36X2cJ7JwdamYAgDz+s+rVMFjt3numwzf/HckM
 google.golang.org/grpc v1.31.0/go.mod h1:N36X2cJ7JwdamYAgDz+s+rVMFjt3numwzf/HckM8pak=
 google.golang.org/grpc v1.31.1/go.mod h1:N36X2cJ7JwdamYAgDz+s+rVMFjt3numwzf/HckM8pak=
 google.golang.org/grpc v1.32.0/go.mod h1:N36X2cJ7JwdamYAgDz+s+rVMFjt3numwzf/HckM8pak=
-google.golang.org/grpc v1.33.1 h1:DGeFlSan2f+WEtCERJ4J9GJWk15TxUi8QGagfI87Xyc=
-google.golang.org/grpc v1.33.1/go.mod h1:fr5YgcSWrqhRRxogOsw7RzIpsmvOZ6IcH4kBYTpR3n0=
 google.golang.org/grpc v1.33.2 h1:EQyQC3sa8M+p6Ulc8yy9SWSS2GVwyRc83gAbG8lrl4o=
 google.golang.org/grpc v1.33.2/go.mod h1:JMHMWHQWaTccqQQlmk3MJZS+GWXOdAesneDmEnv2fbc=
 google.golang.org/protobuf v0.0.0-20200109180630-ec00e32a8dfd/go.mod h1:DFci5gLYBciE7Vtevhsrf46CRTquxDuWsQurQQe4oz8=

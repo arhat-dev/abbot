@@ -19,15 +19,13 @@ import (
 	"gvisor.dev/gvisor/pkg/tcpip/network/ipv6"
 	"gvisor.dev/gvisor/pkg/tcpip/stack"
 	"gvisor.dev/gvisor/pkg/tcpip/transport/raw"
-
-	"arhat.dev/abbot/pkg/types"
 )
 
 func init() {
 	drivers.Register(constant.DriverUsernet, NewDriver, NewConfig)
 }
 
-func NewDriver(ctx context.Context, provider string, cfg interface{}) (types.Driver, error) {
+func NewDriver(ctx context.Context, provider string, cfg interface{}) (drivers.Interface, error) {
 	var config *Config
 	switch c := cfg.(type) {
 	case *Config:
@@ -202,7 +200,7 @@ func (d *Driver) Ensure(up bool) error {
 }
 
 // Delete this interface
-func (d *Driver) Delete() error {
+func (d *Driver) Delete(force bool) error {
 	d.netStack.Close()
 	return nil
 }

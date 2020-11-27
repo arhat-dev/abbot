@@ -10,10 +10,23 @@ import (
 	"arhat.dev/abbot/pkg/drivers"
 )
 
-type InterfaceConfig struct {
-	Driver string `json:"driver" yaml:"driver"`
-	Name   string `json:"name" yaml:"name"`
+type HostNetworkConfig struct {
+	// DataDir to store host network config
+	DataDir string `json:"dataDir" yaml:"dataDir"`
 
+	// Interfaces are static interface definitions, their provider will be set
+	// to `static`
+	Interfaces []InterfaceConfig `json:"interfaces" yaml:"interfaces"`
+
+	// Proxies config to redirect network traffic
+	Proxies []ProxyConfig `json:"proxies" yaml:"proxies"`
+}
+
+type InterfaceConfig struct {
+	// Driver the name of the driver backend
+	Driver string `json:"driver" yaml:"driver"`
+
+	// Config of this interface, options are driver dependent
 	Config interface{} `json:"config" yaml:"config"`
 }
 
@@ -55,16 +68,6 @@ func unmarshalInterfaceConfig(m map[string]interface{}, config *InterfaceConfig)
 		return fmt.Errorf("driver type must be a string")
 	}
 
-	n, ok := m["name"]
-	if !ok {
-		return fmt.Errorf("must specify interface name")
-	}
-
-	config.Name, ok = n.(string)
-	if !ok || config.Name == "" {
-		return fmt.Errorf("invalid interface name: %s", config.Name)
-	}
-
 	delete(m, "driver")
 
 	configData, err := json.Marshal(m)
@@ -85,11 +88,4 @@ func unmarshalInterfaceConfig(m map[string]interface{}, config *InterfaceConfig)
 	}
 
 	return nil
-}
-
-type HostNetworkConfig struct {
-	// Interfaces static interface definitions
-	Interfaces []InterfaceConfig `json:"interfaces" yaml:"interfaces"`
-	// Proxies config to redirect network traffic
-	Proxies []ProxyConfig `json:"proxies" yaml:"proxies"`
 }

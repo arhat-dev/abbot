@@ -3,8 +3,6 @@ package drivers
 import (
 	"context"
 	"fmt"
-
-	"arhat.dev/abbot/pkg/types"
 )
 
 type key struct {
@@ -17,7 +15,7 @@ type factory struct {
 }
 
 type (
-	FactoryFunc       func(ctx context.Context, provider string, cfg interface{}) (types.Driver, error)
+	FactoryFunc       func(ctx context.Context, provider string, cfg interface{}) (Interface, error)
 	ConfigFactoryFunc func() interface{}
 )
 
@@ -32,7 +30,7 @@ func Register(name string, newDriver FactoryFunc, newDriverConfig ConfigFactoryF
 	}
 }
 
-func NewDriver(ctx context.Context, provider, driverName string, cfg interface{}) (types.Driver, error) {
+func NewDriver(ctx context.Context, provider, driverName string, cfg interface{}) (Interface, error) {
 	f, ok := supportedDrivers[key{
 		name: driverName,
 	}]

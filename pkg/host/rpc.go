@@ -10,7 +10,6 @@ import (
 
 	"arhat.dev/abbot/pkg/constant"
 	"arhat.dev/abbot/pkg/drivers"
-	"arhat.dev/abbot/pkg/types"
 )
 
 func (m *Manager) Process(ctx context.Context, req *abbotgopb.Request) (resp *abbotgopb.Response, err error) {
@@ -48,7 +47,7 @@ func (m *Manager) handleHostNetworkConfigQuery(
 		return nil, fmt.Errorf("failed to unmarshal HostNetworkConfigQueryRequest: %w", err)
 	}
 
-	ret, err := m.checkDeviceStatus(req.GetProviders()...)
+	ret, err := m.checkInterfaces(req.GetProviders()...)
 	if err != nil {
 		return nil, err
 	}
@@ -57,51 +56,49 @@ func (m *Manager) handleHostNetworkConfigQuery(
 }
 
 func (m *Manager) handleHostNetworkConfigEnsure(
-	ctx context.Context, data []byte,
-) (*abbotgopb.HostNetworkConfigResponse, error) {
+	ctx context.Context,
+	data []byte,
+) (
+	_ *abbotgopb.HostNetworkConfigResponse,
+	err error,
+) {
 	_ = ctx
 
 	req := new(abbotgopb.HostNetworkConfigEnsureRequest)
-	err := req.Unmarshal(data)
+	err = req.Unmarshal(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal HostNetworkConfigEnsureRequest: %w", err)
 	}
 
+	// validate request, restrict single non empty provider
+	switch req.Provider {
+	case "":
+		return nil, fmt.Errorf("invalid empty provider")
+	case constant.ProviderStatic:
+		// protect static interfaces
+		return nil, fmt.Errorf("static interfaces are immutable")
+	}
+
 	var (
-		add    []*abbotgopb.HostNetworkInterface
-		remove []string
+		toAdd    []*abbotgopb.HostNetworkInterface
+		toUpdate []*abbotgopb.HostNetworkInterface
+		toDelete []string
+
+		expectedNames = make(map[string]struct{})
 	)
 
-	err = func() error {
-		m.mu.RLock()
-		defer m.mu.RUnlock()
-
-		var (
-			provider      string
-			expectedNames = make(map[string]struct{})
-		)
-		// validate name and provider
+	m.mu.Lock()
+	// validate name and provider, determine actual operation
+	{
 		for _, exp := range req.Expected {
 			name := exp.GetMetadata().GetName()
-			p := exp.GetProvider()
 			if name == "" {
-				return fmt.Errorf("must specify interface name")
+				m.mu.Unlock()
+				return nil, fmt.Errorf("invalid empty interface name")
 			}
 
-			if p == "" {
-				return fmt.Errorf("must specify provider")
-			}
-
+			// here we assume they all share the same provider
 			expectedNames[name] = struct{}{}
-
-			if provider == "" {
-				provider = p
-				continue
-			}
-
-			if provider != p {
-				return fmt.Errorf("must specify same provider in single ensue request")
-			}
 		}
 
 		for i, exp := range req.Expected {
@@ -109,109 +106,196 @@ func (m *Manager) handleHostNetworkConfigEnsure(
 
 			existingDev, ok := m.hostDevices[name]
 			if !ok {
-				add = append(add, req.Expected[i])
+				toAdd = append(toAdd, req.Expected[i])
 				continue
 			}
 
-			// found interface with this name, check provider
-			if p := existingDev.Provider(); p != provider {
+			// found interface with this name, check its provider
+			if p := existingDev.Provider(); p != req.Provider {
 				// managed by other controller
-				return fmt.Errorf("interface %s already managed by %s", name, p)
+				m.mu.Unlock()
+				return nil, fmt.Errorf("interface %s already managed by %s", name, p)
 			}
 
-			// name and provider are ok, ensure config
-			err = existingDev.EnsureConfig(req.Expected[i])
-			if err != nil {
-				m.logger.I("failed to ensure config of device, will recreate",
-					log.String("name", name),
-					log.Error(err),
-				)
-
-				remove = append(remove, name)
-				add = append(add, req.Expected[i])
-			}
+			// name and provider are ok, need to update config
+			toUpdate = append(toUpdate, req.Expected[i])
 		}
 
-		// check if any host device with this provider
+		// check if any host device with this provider but not listed
+		// they are no longer wanted by the provider
 		for name, dev := range m.hostDevices {
-			if dev.Provider() != provider {
+			if dev.Provider() != req.Provider {
 				continue
 			}
 
 			if _, ok := expectedNames[name]; !ok {
-				// this interface is not wanted by this provider
-				remove = append(remove, name)
+				toDelete = append(toDelete, name)
 			}
 		}
-
-		return nil
-	}()
-	if err != nil {
-		return nil, fmt.Errorf("invalid ensure request: %w", err)
 	}
 
-	err = func() error {
-		m.mu.Lock()
-		defer m.mu.Unlock()
+	// update, remove and add expected interfaces
+	{
+		var (
+			updated []*abbotgopb.HostNetworkInterface
+			deleted []*abbotgopb.HostNetworkInterface
+			added   []string
+		)
 
-		for _, name := range remove {
-			existingDev, ok := m.hostDevices[name]
-			if !ok {
-				continue
+		defer func() {
+			defer m.mu.Unlock()
+
+			// rollback on error, best effort
+			if err == nil {
+				return
 			}
 
-			m.logger.I("deleting running device", log.String("name", name))
-			err = existingDev.Delete()
-			for i, currentName := range m.hostDeviceNameSeq {
-				if currentName == name {
-					m.hostDeviceNameSeq = append(m.hostDeviceNameSeq[:i], m.hostDeviceNameSeq[i+1:]...)
-					continue
-				}
+			// first delete added devices
+			for _, name := range added {
+				_, _ = m.deleteInterface(name)
 			}
-			delete(m.hostDevices, name)
+
+			// then add deleted devices
+			for _, config := range deleted {
+				_, _ = m.addInterface(config)
+			}
+
+			// rollback device config
+			for _, oldConfig := range updated {
+				_, _ = m.updateInterface(oldConfig)
+			}
+		}()
+
+		for _, newConfig := range toUpdate {
+			var oldConfig *abbotgopb.HostNetworkInterface
+			oldConfig, err = m.updateInterface(newConfig)
+			if err != nil {
+				return nil, fmt.Errorf("failed to update config of interface %q: %w", newConfig.Metadata.Name, err)
+			}
+
+			updated = append(updated, oldConfig)
 		}
 
-		for _, exp := range add {
-			var (
-				name = exp.Metadata.Name
-				d    types.Driver
-				err2 error
-			)
-
-			switch exp.Config.(type) {
-			case *abbotgopb.HostNetworkInterface_Bridge:
-				d, err2 = drivers.NewDriver(m.ctx, exp.Provider, constant.DriverBridge, exp)
-				if err2 != nil {
-					return fmt.Errorf("failed to create bridge interface %s: %w", name, err2)
-				}
-			case *abbotgopb.HostNetworkInterface_Wireguard:
-				d, err2 = drivers.NewDriver(m.ctx, exp.Provider, constant.DriverWireguard, exp)
-				if err2 != nil {
-					return fmt.Errorf("failed to create wireguard interface %s: %w", name, err2)
-				}
-			default:
-				return fmt.Errorf("unknown driver config for interface %s", name)
+		for _, name := range toDelete {
+			var oldConfig *abbotgopb.HostNetworkInterface
+			oldConfig, err = m.deleteInterface(name)
+			if err != nil {
+				return nil, fmt.Errorf("failed to delete interface %q: %w", name, err)
 			}
 
-			m.hostDeviceNameSeq = append(m.hostDeviceNameSeq, d.Name())
-			m.hostDevices[d.Name()] = d
+			deleted = append(deleted, oldConfig)
 		}
 
-		return nil
-	}()
-	if err != nil {
-		return nil, fmt.Errorf("failed to ensure devices: %w", err)
+		for _, exp := range toAdd {
+			var name string
+			name, err = m.addInterface(exp)
+			if err != nil {
+				return nil, fmt.Errorf("failed to add interface: %w", err)
+			}
+
+			added = append(added, name)
+		}
 	}
 
-	ifaces, err := m.checkDeviceStatus()
+	ifaces, err := m.checkInterfaces()
 	if err != nil {
 		return nil, fmt.Errorf("failed to check device status: %w", err)
 	}
 
-	return abbotgopb.NewHostNetworkConfigResponse(ifaces...), nil
+	return &abbotgopb.HostNetworkConfigResponse{Actual: ifaces}, nil
 }
 
-func (m *Manager) checkDeviceStatus(providerList ...string) ([]*abbotgopb.HostNetworkInterface, error) {
+func (m *Manager) updateInterface(
+	config *abbotgopb.HostNetworkInterface,
+) (
+	prevConfig *abbotgopb.HostNetworkInterface,
+	_ error,
+) {
+	name := config.Metadata.Name
+	existingDev, ok := m.hostDevices[name]
+	if !ok {
+		return nil, fmt.Errorf("unexpected interface %q not found", name)
+	}
+
+	prevConfig, err := existingDev.GetConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get old config of interface %q: %w", name, err)
+	}
+
+	m.logger.I("updating running interface", log.String("name", name))
+	err = existingDev.EnsureConfig(config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to ensure config of interface %q: %w", name, err)
+	}
+
+	return prevConfig, nil
+}
+
+func (m *Manager) deleteInterface(name string) (config *abbotgopb.HostNetworkInterface, _ error) {
+	existingDev, ok := m.hostDevices[name]
+	if !ok {
+		return nil, fmt.Errorf("unexpected interface %q not found", name)
+	}
+
+	config, err := existingDev.GetConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get config of interface %q: %w", name, err)
+	}
+
+	m.logger.I("deleting running interface", log.String("name", name))
+	err = existingDev.Delete(true)
+	if err != nil {
+		return nil, fmt.Errorf("failed to delete existing interface: %w", err)
+	}
+
+	// update sequence and index
+	for i, currentName := range m.hostDeviceNameSeq {
+		if currentName == name {
+			m.hostDeviceNameSeq = append(m.hostDeviceNameSeq[:i], m.hostDeviceNameSeq[i+1:]...)
+			continue
+		}
+	}
+	delete(m.hostDevices, name)
+
+	return config, nil
+}
+
+func (m *Manager) addInterface(config *abbotgopb.HostNetworkInterface) (string, error) {
+	var (
+		name = config.Metadata.Name
+		d    drivers.Interface
+		err  error
+	)
+
+	switch config.Config.(type) {
+	case *abbotgopb.HostNetworkInterface_Bridge:
+		d, err = drivers.NewDriver(m.ctx, config.Provider, constant.DriverBridge, config)
+		if err != nil {
+			return "", fmt.Errorf("failed to create bridge interface %s: %w", name, err)
+		}
+	case *abbotgopb.HostNetworkInterface_Wireguard:
+		d, err = drivers.NewDriver(m.ctx, config.Provider, constant.DriverWireguard, config)
+		if err != nil {
+			return "", fmt.Errorf("failed to create wireguard interface %s: %w", name, err)
+		}
+	default:
+		return "", fmt.Errorf("unknown driver config for interface %s", name)
+	}
+
+	err = d.Ensure(true)
+	if err != nil {
+		return "", fmt.Errorf("failed to bring interface %q up: %w", d.Name(), err)
+	}
+
+	name = d.Name()
+
+	m.hostDeviceNameSeq = append(m.hostDeviceNameSeq, name)
+	m.hostDevices[name] = d
+
+	return name, nil
+}
+
+func (m *Manager) checkInterfaces(providerList ...string) ([]*abbotgopb.HostNetworkInterface, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 

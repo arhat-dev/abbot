@@ -30,6 +30,7 @@ func NewConfig() interface{} {
 			Mtu:             65535,
 			HardwareAddress: "",
 			Addresses:       nil,
+			DeleteOnExit:    false,
 		},
 		Overlay: OverlayConfig{
 			MQTT: nil,

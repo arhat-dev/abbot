@@ -13,6 +13,7 @@ func NewConfig() interface{} {
 			Mtu:             1440,
 			HardwareAddress: "",
 			Addresses:       nil,
+			DeleteOnExit:    false,
 		},
 		DriverBridge: abbotgopb.DriverBridge{
 			Alias:      "",

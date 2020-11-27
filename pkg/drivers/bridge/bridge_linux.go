@@ -8,10 +8,11 @@ import (
 	"reflect"
 	"sync"
 
+	"arhat.dev/abbot/pkg/drivers"
+
 	"arhat.dev/abbot-proto/abbotgopb"
 	"go.uber.org/multierr"
 
-	"arhat.dev/abbot/pkg/types"
 	"arhat.dev/abbot/pkg/util"
 	"arhat.dev/abbot/pkg/wrap/netlink"
 )
@@ -45,7 +46,7 @@ func (c *Config) GetLinkAttrs(name string) netlink.LinkAttrs {
 	return ret
 }
 
-func NewDriver(ctx context.Context, provider string, cfg interface{}) (types.Driver, error) {
+func NewDriver(ctx context.Context, provider string, cfg interface{}) (drivers.Interface, error) {
 	var config *Config
 	switch c := cfg.(type) {
 	case *Config:
@@ -89,6 +90,8 @@ type Driver struct {
 
 	provider string
 	name     string
+
+	closeOnExit bool
 
 	h *netlink.Handle
 
@@ -281,23 +284,15 @@ func (d *Driver) Ensure(up bool) error {
 	return nil
 }
 
-func (d *Driver) Delete() error {
-	select {
-	case <-d.ctx.Done():
-		// application exited, this is a system device, keep it
+func (d *Driver) Delete(force bool) error {
+	if !(force || d.closeOnExit) {
 		return nil
-	default:
-		// application still running, we should delete this device
 	}
 
-	var (
-		name = d.name
-	)
-
-	link, err := d.h.LinkByName(name)
+	link, err := d.h.LinkByName(d.Name())
 	if err != nil {
 		if e, ok := err.(netlink.LinkNotFoundError); !ok {
-			return fmt.Errorf("failed to check status of %s: %w", name, e)
+			return fmt.Errorf("failed to check status of %s: %w", d.Name(), e)
 		}
 
 		return nil
@@ -305,7 +300,7 @@ func (d *Driver) Delete() error {
 
 	err = d.h.LinkDel(link)
 	if err != nil {
-		return fmt.Errorf("failed to delete link %s: %w", name, err)
+		return fmt.Errorf("failed to delete link %s: %w", d.Name(), err)
 	}
 
 	return nil

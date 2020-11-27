@@ -32,7 +32,7 @@ import (
 	"arhat.dev/abbot/pkg/constant"
 )
 
-func newRequestCmd(appCtx *context.Context) *cobra.Command {
+func newProcessCmd(appCtx *context.Context) *cobra.Command {
 	reqCmd := &cobra.Command{
 		Use:           "process",
 		SilenceErrors: true,

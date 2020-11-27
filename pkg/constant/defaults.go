@@ -17,8 +17,12 @@ limitations under the License.
 package constant
 
 const (
-	DefaultAbbotConfigFile         = "/etc/abbot/config.yaml"
-	DefaultAbbotListenAddr         = "unix:///var/run/abbot.sock"
-	DefaultCNIPluginsDir           = "/opt/cni/bin"
+	DefaultAbbotConfigFile = "/etc/abbot/config.yaml"
+	DefaultAbbotListenAddr = "unix:///var/run/abbot.sock"
+	DefaultCNIPluginsDir   = "/opt/cni/bin"
+)
+
+const (
+	DefaultHostNetworkDataDir      = "/var/lib/abbot/host"
 	DefaultContainerNetworkDataDir = "/var/lib/abbot/container"
 )
