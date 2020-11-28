@@ -18,11 +18,11 @@ package cmd
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"strconv"
+	"strings"
 
 	"arhat.dev/abbot-proto/abbotgopb"
 	"github.com/spf13/cobra"
@@ -77,6 +77,8 @@ func runProcess(ctx context.Context, config *conf.AbbotConfig) error {
 			req.Kind = abbotgopb.REQ_QUERY_CTR_NETWORK
 		case "container:delete":
 			req.Kind = abbotgopb.REQ_DELETE_CTR_NETWORK
+		case "host:query":
+			req.Kind = abbotgopb.REQ_QUERY_HOST_NETWORK_CONFIG
 		default:
 			return fmt.Errorf("unsupported env action")
 		}
@@ -84,87 +86,128 @@ func runProcess(ctx context.Context, config *conf.AbbotConfig) error {
 		return fmt.Errorf("invalid request with no request body and env action")
 	}
 
-	ctrID := os.Getenv("ABBOT_REQ_CONTAINER_ID")
-	ctrPID := os.Getenv("ABBOT_REQ_CONTAINER_PID")
-	var pid uint32
-	if ctrPID != "" {
-		var pid64 int64
-		pid64, err = strconv.ParseInt(ctrPID, 10, 32)
-		pid = uint32(pid64)
-	}
-
-	if ctrID != "" || pid != 0 {
+	// override host network requests
+	{
+		// nolint:gocritic
 		switch req.Kind {
-		case abbotgopb.REQ_ENSURE_CTR_NETWORK:
-			reqBody := new(abbotgopb.ContainerNetworkEnsureRequest)
-			err = reqBody.Unmarshal(req.Body)
-			if err != nil {
-				return fmt.Errorf("failed to unmarshal ContainerNetworkEnsureRequest: %w", err)
-			}
-
-			if ctrID != "" {
-				reqBody.ContainerId = ctrID
-				if len(reqBody.CniArgs) > 0 {
-					if v, ok := reqBody.CniArgs["K8S_POD_INFRA_CONTAINER_ID"]; ok && v == "" {
-						reqBody.CniArgs["K8S_POD_INFRA_CONTAINER_ID"] = ctrID
-					}
-				}
-			}
-			if pid != 0 {
-				reqBody.Pid = pid
-			}
-			req.Body, err = reqBody.Marshal()
-		case abbotgopb.REQ_RESTORE_CTR_NETWORK:
-			reqBody := new(abbotgopb.ContainerNetworkRestoreRequest)
+		case abbotgopb.REQ_QUERY_HOST_NETWORK_CONFIG:
+			reqBody := new(abbotgopb.HostNetworkConfigQueryRequest)
 			if len(req.Body) != 0 {
 				err = reqBody.Unmarshal(req.Body)
 				if err != nil {
-					return fmt.Errorf("failed to unmarshal ContainerNetworkRestoreRequest: %w", err)
+					return fmt.Errorf("failed to unmarshal HostNetworkConfigQueryRequest: %w", err)
 				}
 			}
 
-			if ctrID != "" {
-				reqBody.ContainerId = ctrID
-			}
-			if pid != 0 {
-				reqBody.Pid = pid
-			}
-			req.Body, err = reqBody.Marshal()
-		case abbotgopb.REQ_DELETE_CTR_NETWORK:
-			reqBody := new(abbotgopb.ContainerNetworkDeleteRequest)
-			if len(req.Body) != 0 {
-				err = reqBody.Unmarshal(req.Body)
-				if err != nil {
-					return fmt.Errorf("failed to unmarshal ContainerNetworkDeleteRequest: %w", err)
+			providers := strings.Split(os.Getenv("ABBOT_REQ_HOST_PROVIDER"), ";")
+			for _, p := range providers {
+				if len(p) == 0 {
+					continue
 				}
+
+				reqBody.Providers = append(reqBody.Providers, p)
 			}
 
-			if ctrID != "" {
-				reqBody.ContainerId = ctrID
-			}
-			if pid != 0 {
-				reqBody.Pid = pid
-			}
-			req.Body, err = reqBody.Marshal()
-		case abbotgopb.REQ_QUERY_CTR_NETWORK:
-			reqBody := new(abbotgopb.ContainerNetworkQueryRequest)
-			if len(req.Body) != 0 {
-				err = reqBody.Unmarshal(req.Body)
-				if err != nil {
-					return fmt.Errorf("failed to unmarshal ContainerNetworkQueryRequest: %w", err)
-				}
-			}
-
-			if ctrID != "" {
-				reqBody.ContainerId = ctrID
-			}
-			if pid != 0 {
-				reqBody.Pid = pid
-			}
 			req.Body, err = reqBody.Marshal()
 		}
 		if err != nil {
-			return fmt.Errorf("failed to reassemble container network request: %w", err)
+			return fmt.Errorf("failed to override host network request: %w", err)
+		}
+	}
+
+	// override container network requests (id and pid)
+	{
+		ctrID := os.Getenv("ABBOT_REQ_CONTAINER_ID")
+		ctrPIDStr := os.Getenv("ABBOT_REQ_CONTAINER_PID")
+		pid := int64(-1)
+		if len(ctrPIDStr) != 0 {
+			pid, err = strconv.ParseInt(ctrPIDStr, 10, 64)
+			if err != nil {
+				return fmt.Errorf("invalid container pid override %q: %w", ctrPIDStr, err)
+			}
+			if pid < 0 {
+				return fmt.Errorf("invalid negative container pid: %q", ctrPIDStr)
+			}
+		}
+
+		// has override
+		if len(ctrID) != 0 || pid != 0 {
+			switch req.Kind {
+			case abbotgopb.REQ_ENSURE_CTR_NETWORK:
+				reqBody := new(abbotgopb.ContainerNetworkEnsureRequest)
+				// container ensure request must provide request body, or it's invalid
+				err = reqBody.Unmarshal(req.Body)
+				if err != nil {
+					return fmt.Errorf("failed to unmarshal ContainerNetworkEnsureRequest: %w", err)
+				}
+
+				if len(ctrID) != 0 {
+					reqBody.ContainerId = ctrID
+					if len(reqBody.CniArgs) > 0 {
+						if v, ok := reqBody.CniArgs["K8S_POD_INFRA_CONTAINER_ID"]; ok && v == "" {
+							reqBody.CniArgs["K8S_POD_INFRA_CONTAINER_ID"] = ctrID
+						}
+					}
+				}
+				if pid > 0 {
+					reqBody.Pid = uint32(pid)
+				}
+				req.Body, err = reqBody.Marshal()
+			case abbotgopb.REQ_RESTORE_CTR_NETWORK:
+				reqBody := new(abbotgopb.ContainerNetworkRestoreRequest)
+				if len(req.Body) != 0 {
+					err = reqBody.Unmarshal(req.Body)
+					if err != nil {
+						return fmt.Errorf("failed to unmarshal ContainerNetworkRestoreRequest: %w", err)
+					}
+				}
+
+				if len(ctrID) != 0 {
+					reqBody.ContainerId = ctrID
+				}
+				if pid != 0 {
+					reqBody.Pid = uint32(pid)
+				}
+
+				req.Body, err = reqBody.Marshal()
+			case abbotgopb.REQ_DELETE_CTR_NETWORK:
+				reqBody := new(abbotgopb.ContainerNetworkDeleteRequest)
+				if len(req.Body) != 0 {
+					err = reqBody.Unmarshal(req.Body)
+					if err != nil {
+						return fmt.Errorf("failed to unmarshal ContainerNetworkDeleteRequest: %w", err)
+					}
+				}
+
+				if len(ctrID) != 0 {
+					reqBody.ContainerId = ctrID
+				}
+				if pid > 0 {
+					reqBody.Pid = uint32(pid)
+				}
+
+				req.Body, err = reqBody.Marshal()
+			case abbotgopb.REQ_QUERY_CTR_NETWORK:
+				reqBody := new(abbotgopb.ContainerNetworkQueryRequest)
+				if len(req.Body) != 0 {
+					err = reqBody.Unmarshal(req.Body)
+					if err != nil {
+						return fmt.Errorf("failed to unmarshal ContainerNetworkQueryRequest: %w", err)
+					}
+				}
+
+				if len(ctrID) != 0 {
+					reqBody.ContainerId = ctrID
+				}
+				if pid > 0 {
+					reqBody.Pid = uint32(pid)
+				}
+
+				req.Body, err = reqBody.Marshal()
+			}
+			if err != nil {
+				return fmt.Errorf("failed to override container network request: %w", err)
+			}
 		}
 	}
 
@@ -184,7 +227,7 @@ func runProcess(ctx context.Context, config *conf.AbbotConfig) error {
 		return fmt.Errorf("failed to marshal response: %w", err)
 	}
 
-	_, err = fmt.Fprintln(os.Stdout, base64.StdEncoding.EncodeToString(respBytes))
+	_, err = fmt.Fprintln(os.Stdout, respBytes)
 	if err != nil {
 		return fmt.Errorf("failed to write response to stdout: %w", err)
 	}
