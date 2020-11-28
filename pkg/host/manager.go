@@ -2,11 +2,19 @@ package host
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
+	"sort"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
+	"arhat.dev/abbot-proto/abbotgopb"
 	"arhat.dev/pkg/log"
 	"go.uber.org/multierr"
 
@@ -66,18 +74,123 @@ func NewManager(
 }
 
 func (m *Manager) Start() error {
-	var err error
-	err = func() error {
-		m.logger.D("ensuring all host interfaces for the first time")
-		err = m.ensureAllDevices()
-		if err != nil {
-			return fmt.Errorf("failed to ensure all host interfaces running for the first time: %w", err)
+	m.logger.D("loading dynamic interfaces")
+
+	// load interfaces with non static provider
+	files, err := ioutil.ReadDir(m.dataDir)
+	if err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("failed to check data dir: %w", err)
 		}
 
-		return nil
-	}()
+		err = os.MkdirAll(m.dataDir, 0755)
+		if err != nil {
+			return fmt.Errorf("failed to create data dir: %w", err)
+		}
+	}
+
+	type ifnameAndIndex struct {
+		index      int64
+		filename   string
+		configData []byte
+		config     *abbotgopb.HostNetworkInterface
+	}
+
+	var dynamicIfaces []ifnameAndIndex
+	for _, f := range files {
+		if f.IsDir() {
+			continue
+		}
+
+		filename := f.Name()
+		if filepath.Ext(filename) != ".json" {
+			// ignore non .json file
+			continue
+		}
+
+		ifaceIndexAndName := strings.TrimSuffix(filepath.Base(filename), ".json")
+		parts := strings.SplitN(ifaceIndexAndName, ".", 2)
+		if len(parts) != 2 {
+			return fmt.Errorf("invalid config file name %q", filename)
+		}
+
+		oldIdx, err2 := strconv.ParseInt(parts[0], 10, 64)
+		if err2 != nil {
+			return fmt.Errorf("unexpected interface index: %w", err2)
+		}
+
+		if oldIdx < 0 {
+			return fmt.Errorf("unexpected negative interface index")
+		}
+
+		ifname := parts[1]
+
+		configData, err2 := ioutil.ReadFile(filename)
+		if err2 != nil {
+			return fmt.Errorf("failed to load interface config data: %w", err2)
+		}
+
+		config := new(abbotgopb.HostNetworkInterface)
+		err2 = json.Unmarshal(configData, config)
+		if err2 != nil {
+			return fmt.Errorf("failed to unmarshal interface config data: %w", err2)
+		}
+
+		switch config.Provider {
+		case constant.ProviderStatic:
+			// static config is not persisted
+			return fmt.Errorf("unexpected static config %q", filename)
+		case "":
+			return fmt.Errorf("invalid interface config with empty provider %q", filename)
+		default:
+			// load this dynamic interface
+		}
+
+		if ifname != config.GetMetadata().GetName() {
+			return fmt.Errorf(
+				"unexpected inconsistent interface name, want %q, actual %q",
+				ifname, config.GetMetadata().GetName(),
+			)
+		}
+
+		dynamicIfaces = append(dynamicIfaces, ifnameAndIndex{
+			index:      oldIdx,
+			filename:   filename,
+			configData: configData,
+			config:     config,
+		})
+	}
+
+	// ensure interface order
+	sort.SliceStable(dynamicIfaces, func(i, j int) bool {
+		return dynamicIfaces[i].index < dynamicIfaces[j].index
+	})
+
+	m.logger.D("resolved dynamic interfaces, creating")
+	for _, iface := range dynamicIfaces {
+		err = os.Remove(iface.filename)
+		if err != nil {
+			return fmt.Errorf("failed to remove old interface config: %w", err)
+		}
+
+		_, err = m.addInterface(iface.config)
+		if err != nil {
+			err2 := ioutil.WriteFile(iface.filename, iface.configData, 0640)
+			if err2 != nil {
+				err2 = fmt.Errorf("failed to restore interface config: %w", err2)
+			}
+
+			return multierr.Append(
+				fmt.Errorf("failed to add persisted interface: %w", err),
+				err2,
+			)
+		}
+	}
+
+	m.logger.D("ensuring all host interfaces for the first time")
+	err = m.ensureAllDevices()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to ensure all host interfaces running for the first time: %w", err)
 	}
 
 	m.logger.V("all host interfaces ensured")
