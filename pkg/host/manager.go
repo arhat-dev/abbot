@@ -3,6 +3,7 @@ package host
 import (
 	"context"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -19,6 +20,8 @@ type Manager struct {
 	ctx    context.Context
 	logger log.Interface
 
+	dataDir string
+
 	hostDeviceNameSeq []string
 	hostDevices       map[string]drivers.Interface
 	mu                *sync.RWMutex
@@ -28,12 +31,12 @@ type Manager struct {
 
 func NewManager(
 	ctx context.Context,
-	hostNetwork *conf.HostNetworkConfig,
+	config *conf.HostNetworkConfig,
 	containerMgr *container.Manager,
 ) (*Manager, error) {
 	var nameSeq []string
 	hostDevices := make(map[string]drivers.Interface)
-	for _, n := range hostNetwork.Interfaces {
+	for _, n := range config.Interfaces {
 		d, err := drivers.NewDriver(ctx, constant.ProviderStatic, n.Driver, n.Config)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create driver %s: %w", n.Driver, err)
@@ -51,6 +54,8 @@ func NewManager(
 	return &Manager{
 		ctx:    ctx,
 		logger: log.Log,
+
+		dataDir: config.DataDir,
 
 		hostDeviceNameSeq: nameSeq,
 		hostDevices:       hostDevices,
@@ -76,7 +81,6 @@ func (m *Manager) Start() error {
 	}
 
 	m.logger.V("all host interfaces ensured")
-	m.logger.D("starting host interfaces ensure routine")
 
 	// use defer to make sure cleanup will always run
 	defer func() {
@@ -98,15 +102,10 @@ func (m *Manager) Start() error {
 		}
 	}()
 
-	m.ensureHostInterfacesPeriodically(5 * time.Second)
-
-	return nil
-}
-
-func (m *Manager) ensureHostInterfacesPeriodically(interval time.Duration) {
-	tk := time.NewTicker(interval)
+	tk := time.NewTicker(5 * time.Second)
 	defer tk.Stop()
 
+	m.logger.D("running host interfaces ensure routine")
 	for {
 		select {
 		case <-tk.C:
@@ -118,7 +117,7 @@ func (m *Manager) ensureHostInterfacesPeriodically(interval time.Duration) {
 				m.logger.V("routine: all host interfaces running")
 			}
 		case <-m.ctx.Done():
-			return
+			return nil
 		}
 	}
 }
@@ -131,15 +130,29 @@ func (m *Manager) ensureAllDevices() error {
 		newSeq []string
 		err    error
 	)
-	for _, devName := range m.hostDeviceNameSeq {
-		dev, ok := m.hostDevices[devName]
+	for i, oldName := range m.hostDeviceNameSeq {
+		dev, ok := m.hostDevices[oldName]
 		if !ok {
+			err = multierr.Append(err, fmt.Errorf("unexpected unknown interface %q", oldName))
 			continue
 		}
 
 		err2 := dev.Ensure(true)
 		if err2 != nil {
-			err = multierr.Append(err, fmt.Errorf("failed to ensure driver for %s: %w", devName, err2))
+			err = multierr.Append(err, fmt.Errorf("failed to ensure interface %q: %w", oldName, err2))
+		}
+
+		realName := dev.Name()
+		filename := m.formatConfigFilename(i, realName)
+		if realName != oldName {
+			// name updated, update config data accordingly
+			oldFile := m.formatConfigFilename(i, oldName)
+			err2 = os.Rename(oldFile, filename)
+			if err2 != nil {
+				err = multierr.Append(err,
+					fmt.Errorf("failed to update config file from %q to %q: %w", oldFile, filename, err2),
+				)
+			}
 		}
 
 		newSeq = append(newSeq, dev.Name())

@@ -1,7 +1,7 @@
 arhat.dev/abbot-proto v0.1.1-0.20201127100340-fcd4ba56957a h1:FgIlIrbSMMULA2BtB02/zQvtUnKIxAkrsFPvMVAu8Gk=
 arhat.dev/abbot-proto v0.1.1-0.20201127100340-fcd4ba56957a/go.mod h1:c3+Z4vdxcM1BcSzjfparE7yORyIUeYrxbFPvu8DXMJk=
-arhat.dev/pkg v0.4.4 h1:PgvjiTJjA1OKU5hi9PgT+Gc3J4ltDEBj3Vc6CHkCFo8=
-arhat.dev/pkg v0.4.4/go.mod h1:f9aXyFUZhlx68pOrJi0WyCELR1TYwEy7XfVR7uRRX+I=
+arhat.dev/pkg v0.4.5-0.20201128134614-3014da9d39d5 h1:3495w36IIKKaNO3HVyCnU90Y95hQK0d3lLeuYgQ/Kn4=
+arhat.dev/pkg v0.4.5-0.20201128134614-3014da9d39d5/go.mod h1:/q7+xuxgJGounlvPI6KYJAZlEtcLBuW3ic5/omQdGUc=
 bazil.org/fuse v0.0.0-20160811212531-371fbbdaa898/go.mod h1:Xbm+BRKSBEpa4q4hTSxohYNQpsxXPbPry4JJWOB3LB8=
 bitbucket.org/bertimus9/systemstat v0.0.0-20180207000608-0eeff89b0690/go.mod h1:Ulb78X89vxKYgdL24HMTiXYHlyHEvruOj1ZPlqeNEZM=
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
@@ -1066,7 +1066,6 @@ golang.org/x/sys v0.0.0-20200905004654-be1d3432aa8f/go.mod h1:h1NjWce9XRLGQEsW7w
 golang.org/x/sys v0.0.0-20200930185726-fdedc70b468f/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20201015000850-e3ed0017c211/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20201018230417-eeed37f84f13/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
-golang.org/x/sys v0.0.0-20201113233024-12cec1faf1ba/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20201117222635-ba5294a509c7/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20201119102817-f84b799fce68 h1:nxC68pudNYkKU6jWhgrqdreuFiOQWj1Fs7T3VrH4Pjw=
 golang.org/x/sys v0.0.0-20201119102817-f84b799fce68/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=

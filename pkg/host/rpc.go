@@ -9,7 +9,6 @@ import (
 	"arhat.dev/pkg/log"
 
 	"arhat.dev/abbot/pkg/constant"
-	"arhat.dev/abbot/pkg/drivers"
 )
 
 func (m *Manager) Process(ctx context.Context, req *abbotgopb.Request) (resp *abbotgopb.Response, err error) {
@@ -205,96 +204,6 @@ func (m *Manager) handleHostNetworkConfigEnsure(
 	return &abbotgopb.HostNetworkConfigResponse{Actual: ifaces}, nil
 }
 
-func (m *Manager) updateInterface(
-	config *abbotgopb.HostNetworkInterface,
-) (
-	prevConfig *abbotgopb.HostNetworkInterface,
-	_ error,
-) {
-	name := config.Metadata.Name
-	existingDev, ok := m.hostDevices[name]
-	if !ok {
-		return nil, fmt.Errorf("unexpected interface %q not found", name)
-	}
-
-	prevConfig, err := existingDev.GetConfig()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get old config of interface %q: %w", name, err)
-	}
-
-	m.logger.I("updating running interface", log.String("name", name))
-	err = existingDev.EnsureConfig(config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to ensure config of interface %q: %w", name, err)
-	}
-
-	return prevConfig, nil
-}
-
-func (m *Manager) deleteInterface(name string) (config *abbotgopb.HostNetworkInterface, _ error) {
-	existingDev, ok := m.hostDevices[name]
-	if !ok {
-		return nil, fmt.Errorf("unexpected interface %q not found", name)
-	}
-
-	config, err := existingDev.GetConfig()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get config of interface %q: %w", name, err)
-	}
-
-	m.logger.I("deleting running interface", log.String("name", name))
-	err = existingDev.Delete(true)
-	if err != nil {
-		return nil, fmt.Errorf("failed to delete existing interface: %w", err)
-	}
-
-	// update sequence and index
-	for i, currentName := range m.hostDeviceNameSeq {
-		if currentName == name {
-			m.hostDeviceNameSeq = append(m.hostDeviceNameSeq[:i], m.hostDeviceNameSeq[i+1:]...)
-			continue
-		}
-	}
-	delete(m.hostDevices, name)
-
-	return config, nil
-}
-
-func (m *Manager) addInterface(config *abbotgopb.HostNetworkInterface) (string, error) {
-	var (
-		name = config.Metadata.Name
-		d    drivers.Interface
-		err  error
-	)
-
-	switch config.Config.(type) {
-	case *abbotgopb.HostNetworkInterface_Bridge:
-		d, err = drivers.NewDriver(m.ctx, config.Provider, constant.DriverBridge, config)
-		if err != nil {
-			return "", fmt.Errorf("failed to create bridge interface %s: %w", name, err)
-		}
-	case *abbotgopb.HostNetworkInterface_Wireguard:
-		d, err = drivers.NewDriver(m.ctx, config.Provider, constant.DriverWireguard, config)
-		if err != nil {
-			return "", fmt.Errorf("failed to create wireguard interface %s: %w", name, err)
-		}
-	default:
-		return "", fmt.Errorf("unknown driver config for interface %s", name)
-	}
-
-	err = d.Ensure(true)
-	if err != nil {
-		return "", fmt.Errorf("failed to bring interface %q up: %w", d.Name(), err)
-	}
-
-	name = d.Name()
-
-	m.hostDeviceNameSeq = append(m.hostDeviceNameSeq, name)
-	m.hostDevices[name] = d
-
-	return name, nil
-}
-
 func (m *Manager) checkInterfaces(providerList ...string) ([]*abbotgopb.HostNetworkInterface, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -307,6 +216,8 @@ func (m *Manager) checkInterfaces(providerList ...string) ([]*abbotgopb.HostNetw
 	all := make(map[string]*abbotgopb.HostNetworkInterface)
 
 	if len(providers) == 0 {
+		// list unmanaged interfaces when no provider restriction
+
 		allIfaces, err := net.Interfaces()
 		if err != nil {
 			return nil, fmt.Errorf("failed to check all host interfaces: %w", err)
@@ -386,6 +297,8 @@ func (m *Manager) checkInterfaces(providerList ...string) ([]*abbotgopb.HostNetw
 
 		ret.Provider = dev.Provider()
 		ret.Config = cfg.Config
+
+		result = append(result, ret)
 	}
 
 	return result, nil
