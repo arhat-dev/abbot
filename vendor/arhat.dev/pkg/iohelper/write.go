@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -29,6 +30,11 @@ func WriteFile(file string, data []byte, perm os.FileMode, overwrite bool) (undo
 	file, err := filepath.Abs(file)
 	if err != nil {
 		return nil, fmt.Errorf("failed to determine absolute path of file: %w", err)
+	}
+
+	rootPath := "/"
+	if runtime.GOOS == "windows" {
+		rootPath = filepath.VolumeName(file)
 	}
 
 	f, err := os.Stat(file)
@@ -71,7 +77,7 @@ func WriteFile(file string, data []byte, perm os.FileMode, overwrite bool) (undo
 
 	missingDirIndex := -1
 	for i := len(dirParts) - 1; i >= 0; i-- {
-		thisDir := filepath.Join(dirParts[:i]...)
+		thisDir := filepath.Join(rootPath, filepath.Join(dirParts[:i]...))
 		_, err = os.Stat(thisDir)
 		if err != nil {
 			continue
@@ -89,7 +95,7 @@ func WriteFile(file string, data []byte, perm os.FileMode, overwrite bool) (undo
 	var undoActions []func() error
 
 	if missingDirIndex != -1 {
-		createdDir := filepath.Join(dirParts[:missingDirIndex+1]...)
+		createdDir := filepath.Join(rootPath, filepath.Join(dirParts[:missingDirIndex+1]...))
 		undoActions = append(undoActions, func() error {
 			return os.Remove(createdDir)
 		})

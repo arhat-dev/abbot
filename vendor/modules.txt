@@ -1,7 +1,7 @@
-# arhat.dev/abbot-proto v0.1.1-0.20201127100340-fcd4ba56957a
+# arhat.dev/abbot-proto v0.1.1
 ## explicit
 arhat.dev/abbot-proto/abbotgopb
-# arhat.dev/pkg v0.4.5-0.20201128134614-3014da9d39d5
+# arhat.dev/pkg v0.4.5
 ## explicit
 arhat.dev/pkg/envhelper
 arhat.dev/pkg/iohelper
@@ -76,7 +76,7 @@ go.uber.org/zap/internal/bufferpool
 go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit
 go.uber.org/zap/zapcore
-# golang.org/x/crypto v0.0.0-20201117144127-c1f2f97bffc9
+# golang.org/x/crypto v0.0.0-20201124201722-c8d3bf9c5392
 golang.org/x/crypto/blake2s
 golang.org/x/crypto/chacha20
 golang.org/x/crypto/chacha20poly1305
