@@ -1,0 +1,29 @@
+[Unit]
+Description=abbot daemon
+After=syslog.target
+
+[Service]
+Type=simple
+
+# ensure we have netfilter kernel module setup
+ExecStartPre=/sbin/modprobe iptable_mangle
+ExecStartPre=/sbin/modprobe iptable_nat
+ExecStartPre=/sbin/modprobe ip6table_mangle
+ExecStartPre=/sbin/modprobe ip6table_nat
+
+# turn on forwarding for all kinds of network traffic
+ExecStartPre=/sbin/sysctl -w net.ipv4.ip_forward=1
+ExecStartPre=/sbin/sysctl -w net.ipv6.conf.all.forwarding=1
+
+# disable bridge netfilter for udp tproxy
+ExecStartPre=/sbin/modprobe br_netfilter
+ExecStartPre=/sbin/sysctl -w net.bridge.bridge-nf-call-iptables=0
+ExecStartPre=/sbin/sysctl -w net.bridge.bridge-nf-call-ip6tables=0
+
+ExecStart=/usr/local/bin/abbot -c /etc/abbot/config.yaml
+ExecStop=/usr/bin/killall abbot
+Restart=always
+RestartSec=30s
+
+[Install]
+WantedBy=multi-user.target
